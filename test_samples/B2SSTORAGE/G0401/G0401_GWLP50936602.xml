@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Allowance xmlns="urn:GEINV:eInvoiceMessage:G0401:4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Main>
+        <AllowanceNumber>GWLP50936602</AllowanceNumber>
+        <AllowanceDate>20260923</AllowanceDate>
+        <Seller>
+            <Identifier>00015555</Identifier>
+            <Name>奧銳有限公司</Name>
+        </Seller>
+        <Buyer>
+            <Identifier>00015555</Identifier>
+            <Name>奧銳有限公司</Name>
+        </Buyer>
+        <AllowanceType>2</AllowanceType>
+        <OriginalInvoiceSellerId>00015555</OriginalInvoiceSellerId>
+        <OriginalInvoiceBuyerId>00015555</OriginalInvoiceBuyerId>
+    </Main>
+    <Details>
+        <ProductItem>
+            <OriginalInvoiceDate>20260923</OriginalInvoiceDate>
+            <OriginalInvoiceNumber>LP50936604</OriginalInvoiceNumber>
+            <OriginalDescription>定時排插</OriginalDescription>
+            <Quantity>1</Quantity>
+            <UnitPrice>300</UnitPrice>
+            <Amount>300</Amount>
+            <Tax>15</Tax>
+            <AllowanceSequenceNumber>001</AllowanceSequenceNumber>
+            <TaxType>1</TaxType>
+        </ProductItem>
+    </Details>
+    <Amount>
+        <TaxAmount>15</TaxAmount>
+        <TotalAmount>300</TotalAmount>
+    </Amount>
+</Allowance>

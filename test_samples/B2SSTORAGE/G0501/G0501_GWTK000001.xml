@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CancelAllowance xmlns="urn:GEINV:eInvoiceMessage:G0501:4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <CancelAllowanceNumber>GWTK000001</CancelAllowanceNumber>
+    <AllowanceType>2</AllowanceType>
+    <AllowanceDate>20260923</AllowanceDate>
+    <BuyerId>00015555</BuyerId>
+    <SellerId>00015555</SellerId>
+    <CancelDate>20260923</CancelDate>
+    <CancelTime>11:50:58</CancelTime>
+    <CancelReason>折讓金額有誤作廢</CancelReason>
+</CancelAllowance>

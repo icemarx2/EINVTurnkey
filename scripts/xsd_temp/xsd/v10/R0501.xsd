@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="urn:GERCP:eReceiptMessage:R0501:1.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:GERCP:eReceiptMessage:R0501:1.0" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xsd:include schemaLocation="Generic_1.0.xsd"/>
+	<!-- 作廢單據: R0501 -->
+	<xsd:element name="CancelReceipt">
+		<xsd:complexType>
+			<xsd:sequence>
+				<!-- 作廢單據號碼 -->
+				<xsd:element name="CancelInvoiceNumber" type="InvoiceNumberType"/>
+				<!-- 單據日期 -->
+				<xsd:element name="InvoiceDate" type="DateType"/>
+				<!-- 買方識別碼 -->
+				<xsd:element name="BuyerId">
+					<xsd:simpleType>
+						<xsd:restriction base="xsd:string">
+							<xsd:maxLength value="10"/>
+						</xsd:restriction>
+					</xsd:simpleType>
+				</xsd:element>
+				<!-- 賣方識別碼 -->
+				<xsd:element name="SellerId">
+					<xsd:simpleType>
+						<xsd:restriction base="xsd:string">
+							<xsd:maxLength value="10"/>
+						</xsd:restriction>
+					</xsd:simpleType>
+				</xsd:element>
+				<!-- 作廢日期 -->
+				<xsd:element name="CancelDate" type="DateType"/>
+				<!-- 作廢時間 -->
+				<xsd:element name="CancelTime" type="TimeType"/>
+				<!-- 作廢原因 -->
+				<xsd:element name="CancelReason">
+					<xsd:simpleType>
+						<xsd:restriction base="xsd:string">
+							<xsd:whiteSpace value="collapse"/>
+						    <xsd:minLength value="1"/>
+							<xsd:maxLength value="20"/>
+						</xsd:restriction>
+					</xsd:simpleType>
+				</xsd:element>
+				<!-- 專案退稅核准文號 -->
+				<xsd:element name="ReturnTaxDocumentNumber" minOccurs="0">
+					<xsd:simpleType>
+						<xsd:restriction base="xsd:string">
+							<xsd:maxLength value="60"/>
+						</xsd:restriction>
+					</xsd:simpleType>
+				</xsd:element>
+				<!-- 備註 -->
+				<xsd:element name="Remark" minOccurs="0">
+					<xsd:simpleType>
+						<xsd:restriction base="xsd:string">
+							<xsd:maxLength value="200"/>
+						</xsd:restriction>
+					</xsd:simpleType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+</xsd:schema>

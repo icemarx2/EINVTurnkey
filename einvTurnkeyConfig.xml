@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TurnkeyConfig>
+	<Production>
+		<!-- 正式環境 -->
+		<SftpAddr>sftp.einvoice.nat.gov.tw</SftpAddr>
+		<SftpPort>2222</SftpPort>
+		<WebServiceUrl>https://gw.einvoice.nat.gov.tw/GEINVInvoiceWS/invoice</WebServiceUrl>
+		<WebServiceVacUrl>https://gw.einvoice.nat.gov.tw/GEINVDTPListWS/partnerlist</WebServiceVacUrl>
+		<WebApiUrl>https://gw.einvoice.nat.gov.tw/gateway/api</WebApiUrl>
+	</Production>
+	<Test>
+		<!-- 測試環境 -->
+		<SftpAddr>tsftp.einvoice.nat.gov.tw</SftpAddr>
+		<SftpPort>2222</SftpPort>
+		<WebServiceUrl>https://tgw.einvoice.nat.gov.tw/GEINVInvoiceWS/invoice</WebServiceUrl>
+		<WebServiceVacUrl>https://tgw.einvoice.nat.gov.tw/GEINVDTPListWS/partnerlist</WebServiceVacUrl>
+		<WebApiUrl>https://tgw.einvoice.nat.gov.tw/gateway/api</WebApiUrl>
+	</Test>
+	<Development>
+		<!-- 開發環境 -->
+		<SftpAddr>192.168.59.124</SftpAddr>
+		<property name="develop-sftp-port" value="2222" />
+		<SftpPort>2222</SftpPort>
+		<WebServiceUrl>http://192.168.59.124:7001/</WebServiceUrl>
+		<WebServiceVacUrl>http://192.168.59.124:7001/</WebServiceVacUrl>
+		<WebApiUrl>http://192.168.59.124:7002/gateway/api</WebApiUrl>
+	</Development>
+</TurnkeyConfig>

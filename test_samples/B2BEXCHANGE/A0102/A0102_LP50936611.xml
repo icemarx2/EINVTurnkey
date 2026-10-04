@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<InvoiceConfirm xmlns="urn:GEINV:eInvoiceMessage:A0102:4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <InvoiceNumber>LP50936611</InvoiceNumber>
+    <InvoiceDate>20260923</InvoiceDate>
+    <BuyerId>00015555</BuyerId>
+    <SellerId>00015555</SellerId>
+    <ReceiveDate>20260923</ReceiveDate>
+    <ReceiveTime>12:39:29</ReceiveTime>
+</InvoiceConfirm>

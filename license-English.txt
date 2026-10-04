@@ -1,0 +1,61 @@
+﻿Electronic Invoice Turnkey Transfer Software Terms of Use
+
+This e-invoice integration service platform (http://www.einvoice.nat.gov.tw, hereinafter referred to as the "Platform") is based on the Ministry of Finance's Financial Information Center (hereinafter referred to as the "Fiscal Center") "Promoting Cloud Invoice Digital Service Accounting" The case of painting outsourcing service”, which was executed by Chunghwa Telecom Co., Ltd. This platform authorizes the "Turnkey Electronic Invoice Transmission" software (hereinafter referred to as the "Software") to be used by users free of charge, so as to facilitate users to perform electronic invoice transmission services in the terminal environment. Before you start to use the software services provided by this platform, please read and confirm to abide by the following terms of use.
+
+1. User qualifications and the scope of application of these Terms of Use
+    1. Before using this software, please read these terms of use in detail. When you press the "Agree" button to start installing and using this software, it means that you have read, understood and agreed to abide by all the contents of these Terms of Use; if you do not agree with these Terms of Use, please press the "Cancel" button Leave, do not use this software again.
+    2. When you press the "Agree" button on behalf of an enterprise, legal person or organization and start to install and use this software, you confirm that you have the right to obtain authorization on behalf of the enterprise, legal person or organization.
+    3. The content of these terms applies to any individual, enterprise or legal person, organization and its employees who need to abide by these terms of use.
+
+2. Agree to the terms
+    1. The platform has the right to modify or change the content of these terms of use as needed, and will announce it through email, the latest news bulletin of the platform, or the update of the Turnkey installation file. Your continued use of the Software after any modification or change to these Terms of Use shall be deemed your agreement to accept such modification or change.
+    2. The platform may modify, change, limit, increase or temporarily suspend some or specific functions of the platform at any time during the operation period without prior notice. You agree that the Platform shall not be liable to you or any third party for this.
+    3. If you do not agree that the service content of this platform or the content of these terms of use may be modified at any time, or the laws of your country or region exclude all or part of the content of these terms of use, please stop using this software immediately.
+
+3. Obligations of users
+    You promise that you will never use this software for any illegal purpose or in any illegal way, and you promise to abide by the relevant laws and regulations of the Republic of China and the international practices for the use of relevant software. You also promise not to use this software to engage in any acts that infringe on the rights and interests of others or violate the law, and promise to abide by the following provisions (including but not limited to), if you are prosecuted by government agencies or third parties for your violation of the provisions of this article, you will be responsible for It is responsible for itself and has nothing to do with this platform; if it causes losses to this platform, it shall be liable for compensation to this platform:
+    1. You will not sell, rent, lend, transfer, transmit, alter, reproduce, adapt, translate, create derivative works, decompile, reverse engineer, or decompile the entire or any part of this platform. , or attempting to obtain the source code from the software, or other attempts to obtain the prototype, program source code, or algorithm of the software on this platform;
+    2. You shall not engage in other behaviors that users of this platform shall not engage in according to the instructions of the Financial Center.
+
+ 
+4. User account, password management and security reminder
+    1. You must first fill in the Turnkey service application form to register as a service object of this platform, and obtain a connection account and password before you can use this platform. For the service application form, please contact the customer service staff of this platform.
+    2. If you have become a service object of this platform, you agree to maintain the confidentiality and security of the account, password, email, database and other information required for the use of various platform resources and connections. All actions you take using the account number, password, electronic signature certificate, and electronic invoice data in the preceding paragraph shall be deemed to be actions you or on behalf of an enterprise, legal person or organization did in person, and you are also fully responsible. You agree to do your best to cooperate with the administrator in the following matters:
+      (1) When your account is stolen, your password is leaked, or any information security problem occurs or may occur, you should immediately notify the customer service staff of this platform to assist in handling.
+      (2) Do not use a public computer to install this software or record your account and password.
+      (3) After each connection is completed, log out to end the use of your account.
+      (4) If you use the software electronic signature certificate, please remove the original file or put it in a safe place after importing the PFX file. If you use a Smart Card certificate, please pull out the card after use and keep it properly.
+      (5) Stay vigilant about information security and do not install P2P software to avoid data leakage.
+      (6) If the content of the original file of the transmitted invoice contains identifying personal information or fields related to personal social activities (such as credit card number), please use the recommended encryption software for encryption.
+      (7) It is recommended to use it for special purpose, and try not to mix it with other software to avoid interference.
+      (8) Enable stand-alone firewall and open only necessary ports.
+      (9) Users should install anti-virus, anti-hack and other software and hardware by themselves to ensure the safety of their own data and equipment. This platform is not responsible for any damage to software and hardware caused by other non-this software.
+      (10) The system regularly backs up data and establishes backup operations to avoid system data damage due to hardware failures or unexpected accidents, resulting in operation interruption.
+    3. If you have violated the preceding items and suffered any loss or injury, you are solely responsible for it and have nothing to do with this platform.
+
+5. Termination and damages
+    1. If you have any violation of these terms of use, relevant laws, financial information center or the announcement of this platform, or if your use behavior is likely to endanger the rights and interests of this platform or a third party, you agree that this platform has the right to terminate or suspend your use of this platform. Software rights, and may require you to delete software reproductions and related content. You understand and agree that the interpretation of whether the user violates the terms of use shall be subject to the judgment of the Financial Information Center.
+    2. You can also delete this software at any time to terminate the use of this platform and not continue to be bound by these terms of use. However, if there are other provisions in laws or these Terms of Use, such provisions shall prevail.
+    3. If you violate the terms of use and cause damage to the platform, or infringe the rights of any third party, and thus derive or cause any third party to make any claims or requests against the platform, you shall be responsible for the platform and the third party. The three persons shall be liable for damages (including but not limited to litigation costs and attorney fees, etc.), and the same shall apply after the termination of these Terms of Use.
+
+6. Intellectual Property Rights
+    1. The code, user interface design, language and software used on this platform are protected by relevant laws and regulations such as copyright. Without the authorization of the Financial Information Center, you are not allowed to reproduce, modify, rent, sell, distribute part or all of this platform, or create derivative works or transfer software in any other way, which involves infringement of intellectual property rights.
+    2. The provisions of this article will remain in effect after you terminate the use of the services of this platform.
+
+7. Privacy Protection
+    1. For all invoice data uploaded by users through Turnkey, the platform will perform de-signature verification, editing, processing, and reconciliation for the content of the data.
+    2. The platform will take reasonable protective measures to protect the privacy involved in the content of the invoice. However, when the following situations occur, this platform may view or provide your information to third parties, including but not limited to courts, competent authorities, police or third parties who have proved that their rights have been infringed:
+      (1) Receive an order from a law enforcement agency;
+      (2) In order to maintain the normal operation and safety of the services of this platform;
+      (3) To protect the rights and interests of third parties and without prejudice to your rights and interests;
+      (4) Other circumstances that are necessary according to the relevant competent authority or financial center to perform statutory duties or judge.
+
+8. Governing Law and Jurisdiction
+    1. The failure of this platform to exercise or enforce any rights or provisions of these terms of use shall not be regarded as a waiver of the aforementioned rights by the Financial Information Center or this platform.
+    2. The interpretation and application of these terms of use, as well as disputes related to these terms of use, shall be based on the true meaning of the services of this platform, and shall be interpreted, supplemented and applied in accordance with the laws of the Republic of China; The district court is the court of first instance jurisdiction.
+
+9. Opinions
+This platform is implemented by Chunghwa Telecom Co., Ltd., the winning bidder of the Financial Information Center's "Promoting Cloud Invoice Digital Service Project Outsourcing Service Project". If you have any questions or suggestions about this software, please send email to e-inv@hibox.hinet.net or call customer service (0800-521-988) for advice.
+
+
+July 1, 112, the Republic of China

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CancelInvoice xmlns="urn:GEINV:eInvoiceMessage:A0201:4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <CancelInvoiceNumber>TK20000001</CancelInvoiceNumber>
+    <InvoiceDate>20260923</InvoiceDate>
+    <BuyerId>00015555</BuyerId>
+    <SellerId>00015555</SellerId>
+    <CancelDate>20260923</CancelDate>
+    <CancelTime>11:50:58</CancelTime>
+    <CancelReason>買賣合約變更作廢</CancelReason>
+</CancelInvoice>

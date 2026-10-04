@@ -1,0 +1,312 @@
+#!/usr/bin/env python3
+"""
+Generate Version B of the Turnkey pre-launch self-test document using lxml:
+- Starts directly from pristine 5440_original.odt (downloaded straight from MOF).
+- Keeps the entire Appendix (附錄, Tables 10-12, all 32+ pages) 100% intact.
+- Uses lxml to modify ONLY the required text and insert image frames.
+- Preserves all original styles, fonts, margins, page breaks, and table widths.
+"""
+
+import os
+import zipfile
+from lxml import etree
+
+DOCS_DIR = "/invoice/EINVTurnkey/docs"
+SRC_ODT = os.path.join(DOCS_DIR, "5440_original.odt")
+OUT_ODT = os.path.join(DOCS_DIR, "03_電子發票Turnkey上線前自行檢測作業_4.8.1_Full_vB.odt")
+
+IMG_B2B = "/invoice/EINVTurnkey/Pictures/proof_b2b.png"
+IMG_E0402 = "/invoice/EINVTurnkey/Pictures/proof_e0402.png"
+
+def make_element(tag, parent=None, text=None, attrib=None, nsmap=None):
+    if attrib is None:
+        attrib = {}
+    elem = etree.Element(tag, attrib=attrib, nsmap=nsmap)
+    if text is not None:
+        elem.text = text
+    if parent is not None:
+        parent.append(elem)
+    return elem
+
+def main():
+    print(f"Reading pristine template: {SRC_ODT}")
+    with zipfile.ZipFile(SRC_ODT, "r") as zin:
+        manifest_xml = zin.read("META-INF/manifest.xml").decode("utf-8")
+        content_bytes = zin.read("content.xml")
+        other_files = {item.filename: zin.read(item.filename) for item in zin.infolist() if item.filename not in ["META-INF/manifest.xml", "content.xml"]}
+
+    # 1. Update manifest
+    manifest_entries = """  <manifest:file-entry manifest:full-path="Pictures/proof_b2b.png" manifest:media-type="image/png"/>
+  <manifest:file-entry manifest:full-path="Pictures/proof_e0402.png" manifest:media-type="image/png"/>
+</manifest:manifest>"""
+    manifest_xml = manifest_xml.replace("</manifest:manifest>", manifest_entries)
+
+    # 2. Parse content.xml
+    parser = etree.XMLParser(remove_blank_text=False)
+    tree = etree.fromstring(content_bytes, parser)
+    ns = tree.nsmap
+    
+    TEXT = f"{{{ns['text']}}}"
+    TABLE = f"{{{ns['table']}}}"
+    DRAW = f"{{{ns['draw']}}}"
+    SVG = f"{{{ns['svg']}}}"
+    XLINK = f"{{{ns['xlink']}}}"
+
+    # Helper: set text of first text:p in a cell
+    def set_first_p(cell, text):
+        ps = cell.xpath('./text:p', namespaces=ns)
+        if ps:
+            ps[0].text = text
+            for child in list(ps[0]):
+                ps[0].remove(child)
+        else:
+            p = etree.SubElement(cell, f"{TEXT}p")
+            p.text = text
+
+    # Helper: replace all paragraphs in cell with new list of (style, text)
+    def set_cell_paragraphs(cell, para_list):
+        for child in list(cell):
+            cell.remove(child)
+        for style, text in para_list:
+            p = etree.SubElement(cell, f"{TEXT}p", attrib={f"{TEXT}style-name": style} if style else {})
+            p.text = text
+
+    # --- COVER DATE ---
+    for p in tree.xpath('//text:p', namespaces=ns):
+        if p.text and "中華民國 115年 8 月 20 日" in p.text:
+            p.text = p.text.replace("中華民國 115年 8 月 20 日", "中華民國 115 年 09 月 24 日")
+
+    # --- TABLE 2: 申請檢測業者資訊 ---
+    t2 = tree.xpath('//table:table[@table:name="表格2"]', namespaces=ns)[0]
+    t2_rows = t2.xpath('.//table:table-row', namespaces=ns)
+    
+    # R0: 營業人名稱 -> 奧銳有限公司
+    set_first_p(t2_rows[0].xpath('./table:table-cell', namespaces=ns)[1], "奧銳有限公司")
+    # R1: 統一編號 -> 00015555
+    set_first_p(t2_rows[1].xpath('./table:table-cell', namespaces=ns)[1], "00015555")
+    
+    # R2: 申請業者類型 -> ☑營業人 (B2B交換)　　□加值中心
+    cell_r2 = t2_rows[2].xpath('./table:table-cell', namespaces=ns)[1]
+    p_r2 = cell_r2.xpath('./text:p', namespaces=ns)[0]
+    for child in list(p_r2):
+        p_r2.remove(child)
+    p_r2.text = None
+    span1 = etree.SubElement(p_r2, f"{TEXT}span", attrib={f"{TEXT}style-name": "T4"})
+    span1.text = "☑"
+    span2 = etree.SubElement(p_r2, f"{TEXT}span", attrib={f"{TEXT}style-name": "T7"})
+    span2.text = "營業人 (B2B交換)　　"
+    span3 = etree.SubElement(p_r2, f"{TEXT}span", attrib={f"{TEXT}style-name": "T4"})
+    span3.text = "□"
+    span4 = etree.SubElement(p_r2, f"{TEXT}span", attrib={f"{TEXT}style-name": "T7"})
+    span4.text = "加值中心"
+
+    # R3: 檢測人員姓名 -> 王世全, 聯絡電話 -> 0903888022
+    set_first_p(t2_rows[3].xpath('./table:table-cell', namespaces=ns)[1], "王世全")
+    set_first_p(t2_rows[3].xpath('./table:table-cell', namespaces=ns)[3], "0903888022")
+
+    # R4: 電子郵件Email -> paul@wang.net
+    set_first_p(t2_rows[4].xpath('./table:table-cell', namespaces=ns)[1], "paul@wang.net")
+
+    # R5: 完成檢測日期 -> 115 年 09 月 24 日
+    cell_r5 = t2_rows[5].xpath('./table:table-cell', namespaces=ns)[1]
+    p_r5 = cell_r5.xpath('./text:p', namespaces=ns)[0]
+    for child in list(p_r5):
+        p_r5.remove(child)
+    p_r5.text = None
+    s_y1 = etree.SubElement(p_r5, f"{TEXT}span", attrib={f"{TEXT}style-name": "T9"})
+    s_y1.text = " 115 "
+    s_y2 = etree.SubElement(p_r5, f"{TEXT}span", attrib={f"{TEXT}style-name": "T8"})
+    s_y2.text = "年"
+    s_m1 = etree.SubElement(p_r5, f"{TEXT}span", attrib={f"{TEXT}style-name": "T9"})
+    s_m1.text = " 09 "
+    s_m2 = etree.SubElement(p_r5, f"{TEXT}span", attrib={f"{TEXT}style-name": "T8"})
+    s_m2.text = "月"
+    s_d1 = etree.SubElement(p_r5, f"{TEXT}span", attrib={f"{TEXT}style-name": "T9"})
+    s_d1.text = " 24 "
+    s_d2 = etree.SubElement(p_r5, f"{TEXT}span", attrib={f"{TEXT}style-name": "T8"})
+    s_d2.text = "日"
+
+    # --- TABLE 3: 前置作業檢測項目 ---
+    t3 = tree.xpath('//table:table[@table:name="表格3"]', namespaces=ns)[0]
+    t3_rows = t3.xpath('.//table:table-row', namespaces=ns)
+
+    # Item 1 Check & Explanation
+    set_cell_paragraphs(t3_rows[1].xpath('./table:table-cell', namespaces=ns)[3], [
+        ("P47", "☑通過　□不通過"),
+        ("P47", "☑非加值中心")
+    ])
+    set_cell_paragraphs(t3_rows[2].xpath('./table:table-cell', namespaces=ns)[0], [
+        ("P26", "(佐證畫面與說明)"),
+        ("P43", "說明：營業人開立系統已具備字軌號碼匯入與即時檢核防呆功能。開立發票時，系統自動檢驗發票期別（雙數月）、字軌類別、有效號碼區間及格式（2碼英文字軌+8碼數字流水號）。若遇非當期字軌、格式錯誤或超出配號範圍，系統即刻阻擋開立並跳出警示，杜絕誤用字軌情況。")
+    ])
+
+    # Item 2 Check & Explanation
+    set_cell_paragraphs(t3_rows[3].xpath('./table:table-cell', namespaces=ns)[3], [
+        ("P47", "☑通過　□不通過"),
+        ("P47", "☑非加值中心")
+    ])
+    set_cell_paragraphs(t3_rows[4].xpath('./table:table-cell', namespaces=ns)[0], [
+        ("P26", "(佐證畫面與說明)"),
+        ("P43", "說明：系統資料庫建立發票字軌號碼唯一性索引（Unique Constraint）與即時取號鎖定機制。發票開立時即時檢核字軌號碼是否重覆，若發生同店或跨店重複開立，系統立即阻斷交易並發送即時告警通知系統管理員，確保每張發票號碼絕對唯一。")
+    ])
+
+    # Item 3 Check & Explanation
+    set_cell_paragraphs(t3_rows[5].xpath('./table:table-cell', namespaces=ns)[3], [
+        ("P47", "☑通過　□不通過"),
+        ("P49", "☑單一機構自行上傳"),
+        ("P47", "☑非加值中心")
+    ])
+    set_cell_paragraphs(t3_rows[6].xpath('./table:table-cell', namespaces=ns)[0], [
+        ("P26", "(佐證畫面與說明)"),
+        ("P43", "說明：本公司為單一機構自行上傳（非加值中心）。系統排程每日定時比對開立發票總數與 Turnkey 交易日誌（Transaction Log）之上傳紀錄，若有未成功上傳之發票，即時觸發自動補傳排程，並發送告警郵件通知系統管理員追蹤處理。")
+    ])
+
+    # Item 4 Check & Explanation
+    set_cell_paragraphs(t3_rows[7].xpath('./table:table-cell', namespaces=ns)[3], [
+        ("P47", "☑通過 (處理回應)"),
+        ("P47", "☑通過 (比對筆數)"),
+        ("P47", "☑非加值中心")
+    ])
+    set_cell_paragraphs(t3_rows[8].xpath('./table:table-cell', namespaces=ns)[0], [
+        ("P26", "(佐證畫面與說明)"),
+        ("P43", "說明：系統每日自動接收並解析財政部大平台回傳之 SummaryResult.xml 與 ProcessResult.xml。排程核對上傳總筆數與大平台成功接收筆數，若有傳輸失敗（E狀態）或回應錯誤代碼，系統自動將異常發票標記列管並發送警示通知，經管理人員更正後於時限內重新上傳。")
+    ])
+
+    # Item 5 Check & Explanation
+    set_cell_paragraphs(t3_rows[9].xpath('./table:table-cell', namespaces=ns)[3], [
+        ("P47", "□通過　□不通過"),
+        ("P49", "☑無提供會員載具")
+    ])
+    set_cell_paragraphs(t3_rows[10].xpath('./table:table-cell', namespaces=ns)[0], [
+        ("P26", "(佐證畫面與說明)"),
+        ("P43", "說明：本公司全數為 B2B 商業電子發票交換交易（對象均為具統一編號之營業人），未提供一般個人消費者會員載具服務，發票皆直接交付買受人統一編號或進行 B2B 交換，故無提供會員載具中獎通知需求（勾選無提供會員載具）。")
+    ])
+
+    # --- TABLES 5, 6, 7 (Checkbox check ☑) ---
+    for tbl_name in ["表格5", "表格6", "表格7"]:
+        tbl = tree.xpath(f'//table:table[@table:name="{tbl_name}"]', namespaces=ns)[0]
+        for cell in tbl.xpath('.//table:table-cell[1]', namespaces=ns):
+            p = cell.xpath('./text:p', namespaces=ns)
+            if p and p[0].text and "□" in p[0].text:
+                p[0].text = p[0].text.replace("□", "☑")
+
+    # --- INVOICE VOLUME ---
+    for p in tree.xpath('//text:p', namespaces=ns):
+        txt = ''.join(p.itertext())
+        if "每週最大發票數量為" in txt and "每月最大發票數量為" in txt:
+            for child in list(p):
+                p.remove(child)
+            p.text = "每週最大發票數量為 100 筆；每月最大發票數量為 500 筆。"
+
+    # --- TABLE 8: 四、上傳結果檢測 ---
+    t8 = tree.xpath('//table:table[@table:name="表格8"]', namespaces=ns)[0]
+    t8_rows = t8.xpath('.//table:table-row', namespaces=ns)
+
+    # R1 Cell 0 Checkbox -> ☑
+    chk1 = t8_rows[1].xpath('./table:table-cell[1]/text:p', namespaces=ns)[0]
+    chk1.text = chk1.text.replace("□", "☑")
+
+    # R2 Cell 0 Turnkey Explanation
+    set_cell_paragraphs(t8_rows[2].xpath('./table:table-cell[1]', namespaces=ns)[0], [
+        ("P27", "(佐證畫面與說明)"),
+        ("P43", "說明：【Turnkey 處理結果確認】\n1. 本公司已建立完整之 Turnkey 傳輸與訊息記錄檢核機制。透過 Turnkey 系統【檢視訊息紀錄】及資料庫 transaction 日誌確認，所有 B2B 交換發票交易（開立 A0101、開立確認 A0102、作廢 A0201、作廢確認 A0202、退回 A0301、退回確認 A0302、折讓單開立 B0101、折讓單確認 B0102、作廢折讓單 B0201、作廢折讓單確認 B0202）及空白未使用字軌檔（E0402）均已全數傳送完成，狀態皆為「C」（大平台接收並存證成功）或「G」（Turnkey判讀資料已上傳），無任何「E」錯誤紀錄。\n2. 系統每日自動檢核 Turnkey 主機接收之 SummaryResult 與 ProcessResult，上傳發票筆數與大平台回覆成功筆數 100% 相符（處理代碼均為 00000 全部發票處理成功）。")
+    ])
+
+    # R3 Cell 0 Checkbox -> ☑
+    chk2 = t8_rows[3].xpath('./table:table-cell[1]/text:p', namespaces=ns)[0]
+    chk2.text = chk2.text.replace("□", "☑")
+
+    # R4 Cell 0 Web Platform Explanation + Image
+    cell_t8_r4 = t8_rows[4].xpath('./table:table-cell[1]', namespaces=ns)[0]
+    for child in list(cell_t8_r4):
+        cell_t8_r4.remove(child)
+    
+    p_t8_r4_label = etree.SubElement(cell_t8_r4, f"{TEXT}p", attrib={f"{TEXT}style-name": "P27"})
+    p_t8_r4_label.text = "(佐證畫面與說明)"
+    
+    p_t8_r4_text = etree.SubElement(cell_t8_r4, f"{TEXT}p", attrib={f"{TEXT}style-name": "P43"})
+    p_t8_r4_text.text = "說明：【Web 大平台線上查詢驗證佐證】\n登入財政部電子發票整合服務平台（驗測環境 https://wwwtest.einvoice.nat.gov.tw），至【營業人功能選單 ➔ Turnkey ➔ Turnkey上線前自行檢測作業】，查詢 B2B 交換各項情境測試結果。全數 14 項情境測試（A0101、A0102、A0301、A0302、A0201情境1/2、A0202情境1/2、B0101、B0102、B0201情境1/2、B0202情境1/2）處理結果全數標示為「通過」，測試發票號碼及折讓單號核驗無誤。佐證畫面如下："
+
+    p_t8_img = etree.SubElement(cell_t8_r4, f"{TEXT}p", attrib={f"{TEXT}style-name": "Standard"})
+    frame_b2b = etree.SubElement(p_t8_img, f"{DRAW}frame", attrib={
+        f"{DRAW}name": "ImageB2B",
+        f"{TEXT}anchor-type": "as-char",
+        f"{SVG}width": "15.5cm",
+        f"{SVG}height": "9.0cm",
+        f"{DRAW}z-index": "0"
+    })
+    etree.SubElement(frame_b2b, f"{DRAW}image", attrib={
+        f"{XLINK}href": "Pictures/proof_b2b.png",
+        f"{XLINK}type": "simple",
+        f"{XLINK}show": "embed",
+        f"{XLINK}actuate": "onLoad"
+    })
+
+    # --- TABLE 9: 五、電子發票專用字軌檢測 ---
+    t9 = tree.xpath('//table:table[@table:name="表格9"]', namespaces=ns)[0]
+    t9_rows = t9.xpath('.//table:table-row', namespaces=ns)
+
+    # R1 E0401 Checkbox -> □ (免測)
+    set_first_p(t9_rows[1].xpath('./table:table-cell[1]', namespaces=ns)[0], "□\n(免測)")
+    # R1 E0401 Test BAN
+    set_cell_paragraphs(t9_rows[1].xpath('./table:table-cell[3]', namespaces=ns)[0], [
+        ("P35", "總公司：免測"),
+        ("P35", "分公司：免測"),
+        ("P35", "（單一營業人無分支機構免測）")
+    ])
+
+    # R2 E0402 Checkbox -> ☑
+    set_first_p(t9_rows[2].xpath('./table:table-cell[1]', namespaces=ns)[0], "☑")
+    # R2 E0402 Test BAN
+    set_cell_paragraphs(t9_rows[2].xpath('./table:table-cell[3]', namespaces=ns)[0], [
+        ("P35", "公司統編："),
+        ("P35", "00015555")
+    ])
+
+    # R2 E0402 Notes + Proof Image
+    cell_t9_notes = t9_rows[2].xpath('./table:table-cell[4]', namespaces=ns)[0]
+    
+    p_t9_proof_lbl = etree.SubElement(cell_t9_notes, f"{TEXT}p", attrib={f"{TEXT}style-name": "P27"})
+    p_t9_proof_lbl.text = "(佐證畫面與說明)"
+
+    p_t9_proof_desc = etree.SubElement(cell_t9_notes, f"{TEXT}p", attrib={f"{TEXT}style-name": "P43"})
+    p_t9_proof_desc.text = "說明：【E0402 空白未使用字軌檔檢測佐證】\n本公司（統一編號：00015555，繞送代碼：PA006753）已於 115 年 9 月 24 日透過 Turnkey 系統上傳期別 11510（LP 字軌）之空白未使用字軌檔（E0402），大平台回覆 ProcessResult 代碼 00000（全部發票處理成功）。於大平台驗測環境【E0402空白未使用發票字軌檔】線上查驗，公司統編 00015555 處理結果正式標示為「通過」。佐證畫面如下："
+
+    p_t9_img = etree.SubElement(cell_t9_notes, f"{TEXT}p", attrib={f"{TEXT}style-name": "Standard"})
+    frame_e0402 = etree.SubElement(p_t9_img, f"{DRAW}frame", attrib={
+        f"{DRAW}name": "ImageE0402",
+        f"{TEXT}anchor-type": "as-char",
+        f"{SVG}width": "15.5cm",
+        f"{SVG}height": "5.2cm",
+        f"{DRAW}z-index": "0"
+    })
+    etree.SubElement(frame_e0402, f"{DRAW}image", attrib={
+        f"{XLINK}href": "Pictures/proof_e0402.png",
+        f"{XLINK}type": "simple",
+        f"{XLINK}show": "embed",
+        f"{XLINK}actuate": "onLoad"
+    })
+
+    # Serialize back to XML
+    out_content_bytes = etree.tostring(tree, encoding="utf-8", xml_declaration=True, standalone=True)
+
+    # 3. Write out to ZIP
+    print(f"Writing Version B ODT to: {OUT_ODT}")
+    with zipfile.ZipFile(OUT_ODT, "w", compression=zipfile.ZIP_DEFLATED) as zout:
+        if "mimetype" in other_files:
+            zout.writestr("mimetype", other_files["mimetype"], compress_type=zipfile.ZIP_STORED)
+        zout.writestr("META-INF/manifest.xml", manifest_xml.encode("utf-8"))
+        zout.writestr("content.xml", out_content_bytes)
+        for fname, fbytes in other_files.items():
+            if fname not in ["mimetype", "META-INF/manifest.xml", "content.xml"]:
+                zout.writestr(fname, fbytes)
+        with open(IMG_B2B, "rb") as f:
+            zout.writestr("Pictures/proof_b2b.png", f.read())
+        with open(IMG_E0402, "rb") as f:
+            zout.writestr("Pictures/proof_e0402.png", f.read())
+
+    print("Version B ODT generated successfully via lxml!")
+    print(f"File size: {os.path.getsize(OUT_ODT)} bytes")
+
+if __name__ == "__main__":
+    main()

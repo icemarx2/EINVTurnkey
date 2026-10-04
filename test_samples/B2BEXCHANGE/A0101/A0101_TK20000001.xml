@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:GEINV:eInvoiceMessage:A0101:4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Main>
+        <InvoiceNumber>TK20000001</InvoiceNumber>
+        <InvoiceDate>20260923</InvoiceDate>
+        <InvoiceTime>11:50:58</InvoiceTime>
+        <Seller>
+            <Identifier>00015555</Identifier>
+            <Name>奧銳有限公司</Name>
+            <Address>臺北市中正區漢口街1段45號10樓</Address>
+        </Seller>
+        <Buyer>
+            <Identifier>00015555</Identifier>
+            <Name>奧銳有限公司(測試買受人)</Name>
+        </Buyer>
+        <InvoiceType>07</InvoiceType>
+        <DonateMark>0</DonateMark>
+    </Main>
+    <Details>
+        <ProductItem>
+            <Description>工業級伺服控制器</Description>
+            <Quantity>2</Quantity>
+            <UnitPrice>5000</UnitPrice>
+            <Amount>10000</Amount>
+            <SequenceNumber>001</SequenceNumber>
+            <TaxType>1</TaxType>
+        </ProductItem>
+    </Details>
+    <Amount>
+        <SalesAmount>10000</SalesAmount>
+        <TaxType>1</TaxType>
+        <TaxRate>0.05</TaxRate>
+        <TaxAmount>500</TaxAmount>
+        <TotalAmount>10500</TotalAmount>
+    </Amount>
+</Invoice>

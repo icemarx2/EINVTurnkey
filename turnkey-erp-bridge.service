@@ -1,0 +1,21 @@
+[Unit]
+Description=Taiwan Electronic Invoice Turnkey to Supabase ERP Bridge
+After=network.target turnkey.service
+Wants=turnkey.service
+
+[Service]
+Type=simple
+User=striker
+Group=striker
+WorkingDirectory=/invoice/EINVTurnkey
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 -m erp_bridge daemon --interval 10
+Restart=always
+RestartSec=5
+
+# Sandboxing and security
+ProtectHome=read-only
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

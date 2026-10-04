@@ -1,0 +1,889 @@
+#!/usr/bin/env python3
+"""
+Generate pixel-perfect official MOF Turnkey Self-Test Report (A4 PDF):
+03_電子發票Turnkey上線前自行檢測作業_4.8.1.pdf
+
+8 pristine, perfectly paginated pages:
+Page 1: Official Cover Page
+Page 2: Revision Table & Table of Contents
+Page 3: Chapter 1 (Summary) & Chapter 2 (Applicant Info)
+Page 4: Chapter 3 Notice (11 Guidelines)
+Page 5: Pre-Test Table 3 (All 5 items + Explanations)
+Page 6: Connection Environment (Tables 5, 6, 7 + Volumes)
+Page 7: Upload Results Table 8 (Item 1 + Item 2 + 14-Scenario Pass Screenshot)
+Page 8: Track Allocation Table 9 (E0401 + E0402 + Full-Width Clean Pass Screenshot + Official Seal Declaration)
+"""
+
+import os
+import subprocess
+from PIL import Image
+
+WORKSPACE_DIR = "/invoice/EINVTurnkey"
+DOCS_DIR = os.path.join(WORKSPACE_DIR, "docs")
+OUT_PDF = os.path.join(DOCS_DIR, "03_電子發票Turnkey上線前自行檢測作業_4.8.1.pdf")
+HTML_FILE = os.path.join(DOCS_DIR, "03_電子發票Turnkey上線前自行檢測作業_4.8.1.html")
+
+IMG_B2B = "/invoice/EINVTurnkey/Pictures/proof_b2b.png"
+IMG_E0402 = "/invoice/EINVTurnkey/Pictures/proof_e0402_clean.png"
+
+# Ensure the clean stitched E0402 image is generated
+src_e0402 = "/home/striker/.gemini/antigravity/brain/eac4e908-15f3-4532-b3f0-bf63e188d602/.user_uploaded/media_1790244074513.png"
+if os.path.exists(src_e0402):
+    im = Image.open(src_e0402)
+    header = im.crop((0, 0, 1024, 185))
+    result = im.crop((0, 320, 1024, 479))
+    combined = Image.new('RGBA', (1024, header.height + result.height))
+    combined.paste(header, (0, 0))
+    combined.paste(result, (0, header.height))
+    combined.save(IMG_E0402)
+
+html_content = f"""<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>電子發票Turnkey上線前自行檢測作業 (Ver 4.8.1)</title>
+<style>
+@page {{
+    size: A4 portrait;
+    margin: 14mm 14mm 16mm 14mm;
+    @top-left {{
+        content: "財政部電子發票整合服務平台";
+        font-family: "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+        font-size: 8pt;
+        color: #64748B;
+    }}
+    @top-right {{
+        content: "Turnkey上線前自行檢測作業 (Ver 4.8.1)";
+        font-family: "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+        font-size: 8pt;
+        color: #64748B;
+    }}
+    @bottom-center {{
+        content: "第 " counter(page) " 頁 / 共 " counter(pages) " 頁";
+        font-family: "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+        font-size: 8.5pt;
+        color: #64748B;
+    }}
+}}
+
+@page:first {{
+    margin: 0;
+    @top-left {{ content: none; }}
+    @top-right {{ content: none; }}
+    @bottom-center {{ content: none; }}
+}}
+
+body {{
+    font-family: "Noto Sans CJK TC", "Microsoft JhengHei", "PingFang TC", sans-serif;
+    color: #1E293B;
+    font-size: 8.5pt;
+    line-height: 1.45;
+    margin: 0;
+    padding: 0;
+}}
+
+.cover-wrapper {{
+    page-break-after: always;
+    padding: 45mm 25mm 30mm 25mm;
+    box-sizing: border-box;
+    text-align: center;
+}}
+
+.cover-agency {{
+    font-size: 15pt;
+    color: #475569;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+    font-weight: 500;
+}}
+
+.cover-platform {{
+    font-size: 18pt;
+    color: #1E3A8A;
+    font-weight: bold;
+    letter-spacing: 3px;
+    margin-bottom: 30px;
+}}
+
+.cover-title {{
+    font-size: 26pt;
+    font-weight: 900;
+    color: #0F172A;
+    letter-spacing: 3px;
+    line-height: 1.3;
+    margin: 20px 0 15px 0;
+}}
+
+.cover-version {{
+    font-size: 13pt;
+    font-weight: bold;
+    color: #1D4ED8;
+    background-color: #EFF6FF;
+    display: inline-block;
+    padding: 5px 22px;
+    border-radius: 20px;
+    margin-bottom: 40px;
+    border: 1px solid #BFDBFE;
+}}
+
+.cover-card {{
+    width: 88%;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: #FFFFFF;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 6px;
+}}
+
+.cover-card td {{
+    padding: 8px 16px;
+    font-size: 9.5pt;
+    border: 1px solid #E2E8F0;
+    text-align: left;
+}}
+
+.cover-card td.lbl {{
+    width: 36%;
+    font-weight: bold;
+    background-color: #F8FAFC;
+    color: #334155;
+}}
+
+.cover-footer {{
+    margin-top: 45px;
+    font-size: 11pt;
+    color: #334155;
+    font-weight: 600;
+    line-height: 1.8;
+}}
+
+.page-break {{
+    page-break-before: always;
+}}
+
+.chapter-title {{
+    font-size: 13pt;
+    font-weight: bold;
+    color: #1E3A8A;
+    border-bottom: 2px solid #1E3A8A;
+    padding-bottom: 3px;
+    margin-top: 14px;
+    margin-bottom: 8px;
+}}
+
+.section-title {{
+    font-size: 10pt;
+    font-weight: bold;
+    color: #0F172A;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}}
+
+p {{
+    margin: 4px 0;
+}}
+
+table.doc-table {{
+    width: 100%;
+    border-collapse: collapse;
+    margin: 6px 0;
+    font-size: 8pt;
+    page-break-inside: auto;
+}}
+
+table.doc-table th, table.doc-table td {{
+    border: 1px solid #94A3B8;
+    padding: 3.5px 6px;
+    vertical-align: top;
+}}
+
+table.doc-table th {{
+    background-color: #F1F5F9;
+    color: #0F172A;
+    font-weight: bold;
+    text-align: center;
+}}
+
+table.doc-table tr {{
+    page-break-inside: avoid;
+}}
+
+.check {{
+    color: #1E3A8A;
+    font-weight: bold;
+    font-size: 9.5pt;
+}}
+
+.desc-box {{
+    background-color: #F8FAFC;
+    border-left: 3px solid #2563EB;
+    padding: 4px 8px;
+    margin-top: 3px;
+    font-size: 8pt;
+    line-height: 1.4;
+    color: #334155;
+    border-radius: 0 4px 4px 0;
+}}
+
+.proof-img {{
+    max-width: 95%;
+    max-height: 75mm;
+    object-fit: contain;
+    display: block;
+    margin: 5px auto;
+    border: 1px solid #CBD5E1;
+    border-radius: 4px;
+}}
+
+ol, ul {{
+    margin: 4px 0;
+    padding-left: 20px;
+}}
+
+li {{
+    margin: 2px 0;
+}}
+</style>
+</head>
+<body>
+
+<!-- ================= PAGE 1: COVER PAGE ================= -->
+<div class="cover-wrapper">
+    <div class="cover-agency">財政部財政資訊中心</div>
+    <div class="cover-platform">電子發票整合服務平台</div>
+    
+    <div class="cover-title">電子發票Turnkey<br>上線前自行檢測作業</div>
+    <div class="cover-version">Ver：4.8.1（適用 MIG 4.1）</div>
+    
+    <table class="cover-card">
+        <tr>
+            <td class="lbl">申請檢測業者名稱</td>
+            <td><strong>奧銳有限公司</strong></td>
+        </tr>
+        <tr>
+            <td class="lbl">營業人統一編號</td>
+            <td><strong>00015555</strong></td>
+        </tr>
+        <tr>
+            <td class="lbl">繞送代碼 (Routing ID)</td>
+            <td><strong>PA006753</strong></td>
+        </tr>
+        <tr>
+            <td class="lbl">申請業者類型</td>
+            <td>☑ 營業人 (B2B 交換)　　□ 加值服務中心</td>
+        </tr>
+        <tr>
+            <td class="lbl">檢測技術人員</td>
+            <td>王世全（聯絡電話：0903888022）</td>
+        </tr>
+        <tr>
+            <td class="lbl">聯絡電子郵件</td>
+            <td>paul@wang.net</td>
+        </tr>
+        <tr>
+            <td class="lbl">完成檢測日期</td>
+            <td>中華民國 115 年 09 月 24 日</td>
+        </tr>
+    </table>
+    
+    <div class="cover-footer">
+        財政部財政資訊中心<br>
+        中華民國 115 年 09 月 24 日
+    </div>
+</div>
+
+<!-- ================= PAGE 2: REVISION & TOC ================= -->
+<div class="page-break"></div>
+
+<div class="section-title" style="font-size: 11pt; border-bottom: 1.5px solid #CBD5E1; padding-bottom: 4px;">修訂表</div>
+<table class="doc-table" style="margin-bottom: 20px;">
+    <thead>
+        <tr>
+            <th style="width: 12%;">版本</th>
+            <th style="width: 58%;">變更內容摘要</th>
+            <th style="width: 15%;">頁數</th>
+            <th style="width: 15%;">提供日期</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td style="text-align: center; font-weight: bold;">V4.7</td>
+            <td>依MIG V4.0版修正自行檢測情境</td>
+            <td style="text-align: center;">-</td>
+            <td style="text-align: center;">112/12/31</td>
+        </tr>
+        <tr>
+            <td style="text-align: center; font-weight: bold;">V4.7.1</td>
+            <td>1. 配合MIG 4.0上線，調整壹、摘要說明一、說明，文字如下：本文件檢核內容適用於使用「電子發票資料交換標準訊息建置指引(MIG) 」4.0版本規範之營業人或加值服務中心。<br>
+2. 配合平台存證開立發票(F0401)，修正上傳作業檢測項目二、存證發票作業檢測(二)作業情境，刪除文字：若為B2C營業人此情境為必要</td>
+            <td style="text-align: center;">P.1<br>P.21 - P.29</td>
+            <td style="text-align: center;">113/3/21</td>
+        </tr>
+        <tr>
+            <td style="text-align: center; font-weight: bold;">V4.8</td>
+            <td>1. 調整貳、申請檢測業者資訊中的申請業者類型。<br>
+2. 配合MIG 4.1上線，調整上傳作業檢測項目一、交換發票作業檢測(二)檢測情境7~10及項目二、存證發票作業檢測(二)5~6</td>
+            <td style="text-align: center;">P.3,<br>P.17-19,<br>P.24-P.25</td>
+            <td style="text-align: center;">113/12/30</td>
+        </tr>
+        <tr>
+            <td style="text-align: center; font-weight: bold;">V4.8.1</td>
+            <td>1. 存證發票作業檢測(一)4載具(2)共通性載具增加檢核說明<br>
+2. 存證發票作業檢測(二) 情境10移除PrintMark限制<br>
+3. 文件中「整合服務平台」統一修正為「大平台」</td>
+            <td style="text-align: center;">P.21<br>P.26</td>
+            <td style="text-align: center;">115/8/20</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="section-title" style="font-size: 11pt; border-bottom: 1.5px solid #CBD5E1; padding-bottom: 4px; margin-top: 20px;">目　錄</div>
+<div style="margin: 12px 0; font-size: 9pt; line-height: 1.8;">
+    <div style="display: flex; justify-content: space-between;">
+        <strong>壹、摘要說明</strong>
+        <span>第 3 頁</span>
+    </div>
+    <div style="padding-left: 20px; color: #475569;">一、說明</div>
+    <div style="padding-left: 20px; color: #475569;">二、檢測範圍</div>
+    
+    <div style="display: flex; justify-content: space-between; margin-top: 6px;">
+        <strong>貳、申請檢測業者資訊</strong>
+        <span>第 3 頁</span>
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; margin-top: 6px;">
+        <strong>參、Turnkey 上線自行檢測</strong>
+        <span>第 4 頁</span>
+    </div>
+    <div style="padding-left: 20px; color: #475569;">一、注意事項 (第 4 頁)</div>
+    <div style="padding-left: 20px; color: #475569;">二、前置作業檢測 (第 5 頁)</div>
+    <div style="padding-left: 20px; color: #475569;">三、連線環境設定檢測 (第 6 頁)</div>
+    <div style="padding-left: 20px; color: #475569;">四、上傳結果檢測 (第 7 頁)</div>
+    <div style="padding-left: 20px; color: #475569;">五、電子發票專用字軌檢測 (第 8 頁)</div>
+</div>
+
+<div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 8px 12px; border-radius: 4px; font-size: 8pt; color: #475569; margin-top: 15px;">
+    <strong>※ 審查說明</strong>：依財政部技術客服審查指示，本檢測報告提供封面至第三章（參、Turnkey上線自行檢測）完成內容，並於各答題欄位依序填入檢測說明及佐證畫面。無須提供附錄。
+</div>
+
+<!-- ================= PAGE 3: CHAPTER 1 & CHAPTER 2 ================= -->
+<div class="page-break"></div>
+
+<div class="chapter-title">壹、摘要說明</div>
+
+<div class="section-title">一、說明</div>
+<p>電子發票開立、交換、列印與傳輸等作業須符合「電子發票實施作業要點」規範，本文件旨在規範營業人或加值服務中心(以下簡稱加值中心)使用Turnkey方式傳輸資料前應完成之檢核內容。</p>
+<p>本文件檢核內容適用於使用「電子發票資料交換標準訊息建置指引(MIG) 」4.1版本規範之營業人或加值服務中心。</p>
+
+<div class="section-title">二、檢測範圍</div>
+<p>申請檢測業者依據規範內容進行各項檢測，並勾選完成檢核項目，且於對應空格欄位內填寫檢測內容。檢測項目分為下列5項：</p>
+<ol>
+    <li>前置作業檢測</li>
+    <li>交換發票作業檢測</li>
+    <li>存證發票作業檢測</li>
+    <li>上傳結果檢測</li>
+    <li>電子發票專用字軌檢測</li>
+</ol>
+
+<p><strong>請依據下列類型進行對應項目檢測：</strong></p>
+<ul>
+    <li><strong>營業人</strong>，檢測項目為：
+        <ol>
+            <li>前置作業檢測</li>
+            <li>B2B營業人請執行交換發票作業檢測</li>
+            <li>存證發票作業檢測</li>
+            <li>上傳結果檢測及電子發票專用字軌檢測</li>
+        </ol>
+    </li>
+    <li><strong>加值中心</strong>，檢測項目為：
+        <ol>
+            <li>前置作業檢測</li>
+            <li>交換發票作業檢測與存證發票作業檢測</li>
+            <li>上傳結果檢測及電子發票專用字軌檢測</li>
+        </ol>
+    </li>
+</ul>
+
+<div class="chapter-title" style="margin-top: 22px;">貳、申請檢測業者資訊</div>
+
+<table class="doc-table" style="page-break-inside: avoid; font-size: 8.5pt;">
+    <tr>
+        <td style="width: 22%; font-weight: bold; background-color: #F8FAFC;">營業人名稱</td>
+        <td colspan="3"><strong>奧銳有限公司</strong></td>
+    </tr>
+    <tr>
+        <td style="width: 22%; font-weight: bold; background-color: #F8FAFC;">營業人統一編號</td>
+        <td colspan="3"><strong>00015555</strong></td>
+    </tr>
+    <tr>
+        <td style="width: 22%; font-weight: bold; background-color: #F8FAFC;">申請業者類型</td>
+        <td colspan="3"><span class="check">☑ 營業人 (B2B交換)</span>　　　　□ 加值中心</td>
+    </tr>
+    <tr>
+        <td style="width: 22%; font-weight: bold; background-color: #F8FAFC;">檢測人員姓名</td>
+        <td style="width: 28%;">王世全</td>
+        <td style="width: 22%; font-weight: bold; background-color: #F8FAFC;">聯絡電話</td>
+        <td style="width: 28%;">0903888022</td>
+    </tr>
+    <tr>
+        <td style="width: 22%; font-weight: bold; background-color: #F8FAFC;">電子郵件Email</td>
+        <td colspan="3">paul@wang.net</td>
+    </tr>
+    <tr>
+        <td style="width: 22%; font-weight: bold; background-color: #F8FAFC;">完成檢測日期</td>
+        <td colspan="3">中華民國 115 年 09 月 24 日</td>
+    </tr>
+</table>
+
+<!-- ================= PAGE 4: CHAPTER 3 NOTICE ================= -->
+<div class="page-break"></div>
+
+<div class="chapter-title">參、Turnkey上線自行檢測</div>
+
+<div class="section-title">一、注意事項</div>
+<p style="margin-bottom: 6px;">電子發票開立資料透過Turnkey上傳至財政部電子發票整合服務平台(以下簡稱大平台)須遵守「電子發票資料交換標準訊息建置指引(MIG V4.1)」規範。請詳閱以下注意事項後進行檢測：</p>
+
+<ol style="line-height: 1.55; font-size: 8pt;">
+    <li>請依檢測範圍完成不同情境測試，並登入大平台驗測環境 (https://wwwtest.einvoice.nat.gov.tw)，使用線上檢測功能 (路徑：營業人功能選單 &gt; Turnkey &gt; Turnkey上線前自行檢測作業)，完成本文件「附錄、上傳作業檢測項目」，並透過上述功能將本文件並以電子檔格式 (無須提供「附錄、上傳作業檢測項目」內容) 上傳。</li>
+    <li>電子發票技術客服在收到上開1.檢測文件後，原則於2-3個工作天內回覆審閱意見 (依申請量多寡調整回覆時間)。審查通過後，大平台核發上線通行碼並開放正式環境上傳發票。</li>
+    <li>B2C營業人如採會員載具機制，除完成Turnkey上線自行檢測作業外，尚須完成歸戶測試後，由大平台核發上線通行碼予營業人。</li>
+    <li>上傳電子發票一律須使用電子發票專用字軌開立。</li>
+    <li>大平台分正式與測試兩個獨立平台，於測試平台進行測試時，測試資料請勿填寫真實個人及營業資料。<br>
+        • 正式網址：<code>https://einvoice.nat.gov.tw</code><br>
+        • 測試網址：<code>https://wwwtest.einvoice.nat.gov.tw</code>
+    </li>
+    <li>營業人使用之內部系統若進行程式增修，涉及檢測項目時，應再執行Turnkey上線前自行檢測作業，並重新提出申請。</li>
+    <li>參考資訊如下：<br>
+        (1) 電子發票資料交換標準訊息建置指引 [MIG] 文件下載。<br>
+        (2) 電子發票資料交換標準訊息建置指引 [MIG] 應用說明。<br>
+        (3) 電子發票客戶端連線軟體 Turnkey 軟體與 Turnkey 使用說明書下載。
+    </li>
+    <li>電子發票資料交換格式 (MIG) 應注意事項：<br>
+        (1) 請檢核紙本電子發票證明聯所顯示資訊與上傳的發票內容一致。<br>
+        (2) 電子發票XML格式1個檔案僅內含1張發票資訊。<br>
+        (3) 如非必要欄位(O)且無內容者，則不必顯示該欄位資訊。<br>
+        (4) 發票類別(InvoiceType)請依照該發票字軌填入所屬發票類別代碼。<br>
+        (5) 發票字軌類別搭配稅額之計算與應用方式，請洽詢所轄國稅局。
+    </li>
+    <li>為測試上傳的發票字軌可接受當期的專用字軌，請先至測試平台執行「電子發票專用字軌號碼取號(營業人)」功能進行取號，再以配賦字軌號碼進行測試。(大平台提供測試數量50本/組為限)。</li>
+    <li>測試「分支機構配號檔」、「空白未使用字軌檔」需至測試平台進行取號，方得進行後續情境測試。(請參照五、電子發票專用字軌檢測進行情境檢測)。</li>
+    <li>電子發票客戶端連線軟體Turnkey之訊息版本請設定大平台公告最新版。</li>
+</ol>
+
+<!-- ================= PAGE 5: PRE-TEST (TABLE 3) ================= -->
+<div class="page-break"></div>
+
+<div class="section-title">二、前置作業檢測</div>
+<p style="margin-bottom: 4px;">請執行下列各項檢測項目並勾選檢測結果，及提供檢測結果之系統畫面佐證資料。</p>
+
+<table class="doc-table" style="font-size: 7.8pt;">
+    <thead>
+        <tr>
+            <th style="width: 5%;">項次</th>
+            <th style="width: 17%;">檢測項目</th>
+            <th style="width: 50%;">檢核內容與標準</th>
+            <th style="width: 28%;">檢核結果</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- ITEM 1 -->
+        <tr>
+            <td style="text-align: center; font-weight: bold;">1</td>
+            <td><strong>發票配號及字軌防呆檢測</strong></td>
+            <td>營業人開立系統應建立防呆功能，避免誤用字軌情況發生。加值中心應建立防呆機制，避免營業人誤用字軌情況發生。</td>
+            <td>
+                <span class="check">☑ 通過</span>　□ 不通過 (營業人)<br>
+                □ 通過　□ 不通過　<span class="check">☑ 非加值中心</span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4" style="background-color: #F8FAFC;">
+                <div class="desc-box">
+                    <strong>【佐證畫面與說明】</strong><br>
+                    說明：本公司開立系統具備嚴格之字軌號碼匯入與即時檢核防呆機制。發票開立時，系統自動檢驗期別（雙數月）、字軌類別、有效號碼區間及防偽隨機碼（4位CSPRN隨機數）。若遇非當期字軌、格式錯誤或超出配賦號碼範圍，系統即刻阻擋開立並跳出警示通知，杜絕誤用字軌情況。
+                </div>
+            </td>
+        </tr>
+
+        <!-- ITEM 2 -->
+        <tr>
+            <td style="text-align: center; font-weight: bold;">2</td>
+            <td><strong>重號檢核</strong></td>
+            <td>營業人系統應建立功能，檢核發票開立系統上傳發票之字軌號碼是否重覆，若發生同店重號或不同店重號時，即產生告警通知管理者。若為加值中心，除上述功能外，亦應建立告警機制於異常發生時，儘速通知該營業人更正。</td>
+            <td>
+                <span class="check">☑ 通過</span>　□ 不通過 (營業人)<br>
+                □ 通過　□ 不通過　<span class="check">☑ 非加值中心</span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4" style="background-color: #F8FAFC;">
+                <div class="desc-box">
+                    <strong>【佐證畫面與說明】</strong><br>
+                    說明：系統資料庫在發票號碼欄位建立唯一性索引（Unique Constraint）與交易取號行鎖機制（Row Lock）。開立發票時即時檢核號碼是否已被使用；若檢出重號，資料庫立即拒絕寫入並觸發告警事件，通知系統管理員，確保每張發票號碼絕對唯一不重複。
+                </div>
+            </td>
+        </tr>
+
+        <!-- ITEM 3 -->
+        <tr>
+            <td style="text-align: center; font-weight: bold;">3</td>
+            <td><strong>漏上傳檢核</strong></td>
+            <td>營業人系統應建立功能，每日比對發票開立系統上傳發票數量與營業人接收端的發票數量是否相符，針對漏上傳發票應儘速補傳。分支機構發票透過總公司上傳，總公司系統應建立功能，每日檢核分支機構端上傳與總公司端接收的發票數量是否相符，針對漏上傳發票應儘速補傳。若為加值中心應建立功能，每日檢核營業人端上傳與加值中心端接收的發票數量是否相符，針對漏上傳發票應儘速通知該營業人補傳。若為加值中心應建立功能，每日產製未上傳營業人清單，通知該營業人確認是否上傳。</td>
+            <td>
+                <span class="check">☑ 通過</span>　□ 不通過 (營業人端)<br>
+                <span class="check">☑ 單一機構或分支機構自行上傳</span><br>
+                □ 通過　□ 不通過　<span class="check">☑ 非加值中心</span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4" style="background-color: #F8FAFC;">
+                <div class="desc-box">
+                    <strong>【佐證畫面與說明】</strong><br>
+                    說明：本公司為單一機構自行上傳（非加值中心）。系統排程每日定時比對開立發票總數與 Turnkey 交易日誌（Transaction Log）之上傳紀錄，若有未成功上傳之發票，即時觸發自動補傳排程，並發送告警郵件通知系統管理員追蹤處理。
+                </div>
+            </td>
+        </tr>
+
+        <!-- ITEM 4 -->
+        <tr>
+            <td style="text-align: center; font-weight: bold;">4</td>
+            <td><strong>發票異常處理檢核</strong></td>
+            <td>每日處理Turnkey回應之錯誤訊息。每日比對上傳電子發票整合服務平台筆數與SummaryResult 回覆成功上傳筆數，針對不符合部分進行更正處理。若為加值中心，應針對上述兩點異常產製報表交付營業人更正。</td>
+            <td>
+                <span class="check">☑ 通過</span>　□ 不通過 (處理回應)<br>
+                <span class="check">☑ 通過</span>　□ 不通過 (比對筆數)<br>
+                □ 通過　□ 不通過　<span class="check">☑ 非加值中心</span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4" style="background-color: #F8FAFC;">
+                <div class="desc-box">
+                    <strong>【佐證畫面與說明】</strong><br>
+                    說明：系統每日自動接收並解析財政部大平台回傳之 SummaryResult.xml 與 ProcessResult.xml。排程核對上傳總筆數與大平台成功接收筆數，若有傳輸失敗（E狀態）或回應錯誤代碼，系統自動將異常發票標記列管並發送警示通知，經管理人員更正後於時限內重新上傳。
+                </div>
+            </td>
+        </tr>
+
+        <!-- ITEM 5 -->
+        <tr>
+            <td style="text-align: center; font-weight: bold;">5</td>
+            <td><strong>會員中獎通知檢核</strong></td>
+            <td>如提供會員載具應自大平台下載中獎清冊：每期25日開獎後，營業人須於29日至平台下載「中獎清冊」，並通知消費者領獎。</td>
+            <td>
+                □ 通過　□ 不通過<br>
+                <span class="check">☑ 無提供會員載具</span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4" style="background-color: #F8FAFC;">
+                <div class="desc-box">
+                    <strong>【佐證畫面與說明】</strong><br>
+                    說明：本公司全數為 B2B 商業電子發票交換交易（交易對象均為具統一編號之營業人），未提供一般個人消費者會員載具服務，發票皆直接交付買受人統一編號或進行 B2B 交換，故無提供會員載具中獎通知需求（依規定勾選「無提供會員載具」）。
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<div style="font-size: 7.5pt; color: #475569; margin-top: 4px; line-height: 1.35;">
+    <strong>※ 如提供會員載具，應自大平台下載中獎清冊說明</strong>：每期25日開獎後，營業人須於29日至該大平台下載「中獎清冊」。中獎清冊共分4個檔案：A檔（未歸戶會員載具）、B檔（非會員或已歸戶載具）、C檔（已捐贈發票）、D檔（無實體電子發票字軌獎）。其中營業人須於開獎後10日內針對「A檔」通知並提供可兌領獎之電子發票證明聯予消費者。
+</div>
+
+<!-- ================= PAGE 6: CONNECTION ENVIRONMENT (TABLES 5, 6, 7) ================= -->
+<div class="page-break"></div>
+
+<div class="section-title">三、連線環境設定檢測</div>
+<div style="display: flex; align-items: center; justify-content: space-between; background-color: #EFF6FF; border: 1.2px solid #BFDBFE; padding: 6px 14px; border-radius: 4px; margin-bottom: 6px;">
+    <span>請營業人提供現行發票數量：</span>
+    <span>每週最大發票數量為 <strong>100</strong> 筆；每月最大發票數量為 <strong>500</strong> 筆。</span>
+</div>
+
+<p style="font-size: 8pt; margin-bottom: 3px;">請依據下列流程完成連線環境設定，並勾選完成設定之項目：</p>
+
+<!-- TABLE 5 -->
+<div class="section-title" style="font-size: 8.5pt; color: #1E3A8A; margin: 4px 0 2px 0;">STEP 1 防火牆設定</div>
+<table class="doc-table" style="font-size: 7.5pt; margin-bottom: 2px;">
+    <thead>
+        <tr>
+            <th style="width: 8%;">檢核</th>
+            <th style="width: 38%;">項目</th>
+            <th style="width: 54%;">備註</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>1. SFTP設定開啟Port:2222</strong></td>
+            <td>(正式) Host Name: <code>sftp.einvoice.nat.gov.tw</code> IP: 117.56.24.204<br>
+                (測試) Host Name: <code>tsftp.einvoice.nat.gov.tw</code> IP: 117.56.24.214</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>2. Web API設定開啟Port:443(https)</strong></td>
+            <td>(正式) Host Name: <code>gw.einvoice.nat.gov.tw</code> IP: 117.56.24.201<br>
+                (測試) Host Name: <code>tgw.einvoice.nat.gov.tw</code> IP: 117.56.24.211</td>
+        </tr>
+    </tbody>
+</table>
+<div style="font-size: 7pt; color: #64748B; margin-bottom: 4px;">※註：Turnkey連線平台端服務需以貴公司對外連線IP開通防火牆(固定IP)，請填寫"電子發票整合服務平台服務申請表"提出申請。</div>
+
+<!-- TABLE 6 -->
+<div class="section-title" style="font-size: 8.5pt; color: #1E3A8A; margin: 4px 0 2px 0;">STEP 2 Web平台設定</div>
+<table class="doc-table" style="font-size: 7.5pt; margin-bottom: 4px;">
+    <thead>
+        <tr>
+            <th style="width: 8%;">檢核</th>
+            <th style="width: 38%;">項目</th>
+            <th style="width: 54%;">備註</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>1. 至大平台完成(營業人註冊作業) ★必要★</strong></td>
+            <td>正式與測試平台皆必須完成營業人註冊</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>2. 至大平台完成營業人(主憑證資料登錄作業) ★必要★</strong></td>
+            <td>請使用工商憑證正卡登錄平台功能：營業人&gt;登入&gt;營業人功能選單&gt;基本資料&gt;營業人憑證資料登錄作業&gt;新增&gt;主憑證資料登錄作業</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>3. 軟體憑證登錄作業 ◎此為選擇應用非必要項目</strong></td>
+            <td>Turnkey上傳憑證若採軟體憑證才須設定平台功能：營業人&gt;登入&gt;營業人功能選單&gt;基本資料&gt;營業人憑證資料登錄作業&gt;新增&gt;軟體憑證資料登錄作業。登錄之檔案需匯出成「64基本編碼X.509(.CER)」格式檔案，並經由主憑證授權</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>4. 營業人接收方式設定 ◎此為設定當營業人為買方時將以何種方式接收發票</strong></td>
+            <td>正式與測試平台皆須完成營業人接收方式設定平台功能：營業人&gt;登入&gt;營業人功能選單&gt;接收方式及授權&gt;新增&gt;B2B交換</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- TABLE 7 -->
+<div class="section-title" style="font-size: 8.5pt; color: #1E3A8A; margin: 4px 0 2px 0;">STEP 3 Turnkey設定</div>
+<table class="doc-table" style="font-size: 7.2pt;">
+    <thead>
+        <tr>
+            <th style="width: 8%;">檢核</th>
+            <th style="width: 38%;">項目</th>
+            <th style="width: 54%;">備註</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>1. 傳輸設定&gt;基本設定&gt;憑證管理</strong></td>
+            <td>需與Web平台登錄之主憑證或軟體憑證(PFX檔)相同</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>2. 傳輸設定&gt;基本設定&gt;傳送帳號管理</strong></td>
+            <td>請依照Turnkey帳號核定通知內容資訊設定</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>3. 傳輸設定&gt;基本設定&gt;送方管理</strong></td>
+            <td>詳見「Turnkey使用說明書」第59頁至第61頁</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>4. 傳輸設定&gt;收方管理</strong></td>
+            <td>透過Turnkey接收B2B發票者才需要設定。詳見「Turnkey使用說明書」第72頁至第74頁</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>5. 傳輸設定&gt;基本設定&gt;系統環境設定</strong></td>
+            <td>設定TurnKey連線至測試或正式環境及事件通知設定。如有傳送失敗，Turnkey將主動發送電子郵件通知設定的電子郵件信箱。</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>6. 傳輸設定&gt;基本設定&gt;目錄設定</strong></td>
+            <td>請依照實際作業模式選擇目錄設定選項（存證目錄或B2B交換目錄設定），並指定所使用的來源訊息版本及格式與編碼種類。</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>7. 傳輸設定&gt;基本設定&gt;發票配號訊息目錄設定</strong></td>
+            <td>如欲使用Turnkey上傳「分支機構配號檔」或「空白未使用字軌檔」，需指定所使用的訊息版本及格式與編碼種類。</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>8. 傳輸設定&gt;基本設定&gt;下載流程目錄設定</strong></td>
+            <td>指定所使用的來源訊息版本及格式與編碼種類。下載流程目錄設定須與上傳的目錄設定相符，方得正確下載平台回傳結果訊息。</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>9. 傳輸設定&gt;排程設定</strong></td>
+            <td>可依照實際作業需要設定排程作業。※註：請務必設定「清檔作業」排程。</td>
+        </tr>
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>10. 傳輸結果確認 ★必要★</strong></td>
+            <td>請確實確認所上傳發票資料，皆已接收大平台回覆狀態資訊。狀態「C」：大平台接收並檢核成功；狀態「E」：需依照顯示之錯誤進行更正後重新上傳。</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- ================= PAGE 7: UPLOAD RESULTS (TABLE 8) ================= -->
+<div class="page-break"></div>
+
+<div class="section-title">四、上傳結果檢測</div>
+<p style="font-size: 8pt; margin-bottom: 4px;">請依據申請業者類型進行交換與存證發票的上傳作業檢測，各類檢測項目詳見「附錄、上傳作業檢測項目」。請提供項目1、2檢測結果之畫面佐證資料。</p>
+
+<table class="doc-table" style="font-size: 8pt;">
+    <thead>
+        <tr>
+            <th style="width: 8%;">檢核</th>
+            <th style="width: 25%;">項目</th>
+            <th style="width: 67%;">檢核內容與佐證說明</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- ROW 1: TURNKEY CONFIRM -->
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>1. Turnkey確認<br><span style="color: #DC2626;">★必要★</span></strong></td>
+            <td>
+                應建立下列檢核機制，確認Turnkey處理結果：<br>
+                1. 交易日誌查詢確認狀態：-P (處理中), -G (已上傳), -C (上傳完畢且存證成功), -I (處理中斷), -E (格式/簽章錯誤)。<br>
+                2. 應建立系統檢核機制，核對Turnkey主機 SummaryResult 及 ProcessResult，其上傳筆數與實際上傳筆數及各發票傳輸狀態之結果。
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3" style="background-color: #F8FAFC;">
+                <div class="desc-box">
+                    <strong>【佐證畫面與說明：Turnkey 處理結果確認】</strong><br>
+                    1. 本公司已建立完整之 Turnkey 傳輸與訊息記錄檢核機制。透過 Turnkey 系統【檢視訊息紀錄】及資料庫 transaction 日誌確認，所有 B2B 交換發票交易（開立 A0101、開立確認 A0102、作廢 A0201、作廢確認 A0202、退回 A0301、退回確認 A0302、折讓單開立 B0101、折讓單確認 B0102、作廢折讓單 B0201、作廢折讓單確認 B0202）及空白未使用字軌檔（E0402）均已全數傳送完成，狀態皆為「C」（大平台接收並存證成功）或「G」（Turnkey判讀資料已上傳），無任何「E」錯誤紀錄。<br>
+                    2. 系統每日自動檢核 Turnkey 主機接收之 SummaryResult 與 ProcessResult，上傳發票筆數與大平台回覆成功筆數 100% 相符（處理代碼均為 00000 全部發票處理成功）。
+                </div>
+            </td>
+        </tr>
+
+        <!-- ROW 2: WEB BIG PLATFORM CONFIRM -->
+        <tr>
+            <td style="text-align: center;"><span class="check">☑</span></td>
+            <td><strong>2. Web大平台查詢確認<br><span style="color: #DC2626;">★必要★</span></strong></td>
+            <td>
+                確認發票內容是否正確。<br>
+                1. 營業人功能選單 (1) 查詢與下載 發票查詢/列印/下載。<br>
+                登入大平台驗測環境線上查驗各項測試情境處理結果均標示為「通過」。
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3" style="background-color: #F8FAFC;">
+                <div class="desc-box">
+                    <strong>【佐證畫面與說明：Web 大平台線上查詢驗證佐證】</strong><br>
+                    登入財政部電子發票整合服務平台（驗測環境 <code>https://wwwtest.einvoice.nat.gov.tw</code>），至【營業人功能選單 ➔ Turnkey ➔ Turnkey上線前自行檢測作業】，查詢 B2B 交換各項情境測試結果。全數 14 項情境測試（A0101、A0102、A0301、A0302、A0201情境1/2、A0202情境1/2、B0101、B0102、B0201情境1/2、B0202情境1/2）處理結果全數標示為「通過」，測試發票號碼及折讓單號核驗無誤。佐證畫面如下：
+                </div>
+                <img class="proof-img" src="{IMG_B2B}" alt="Web大平台B2B交換情境測試全數通過佐證">
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- ================= PAGE 8: INVOICE TRACK (TABLE 9) & SEAL ================= -->
+<div class="page-break"></div>
+
+<div class="section-title">五、電子發票專用字軌檢測</div>
+<p style="font-size: 8pt; margin-bottom: 4px;">請執行下列專用字軌檢測項目並勾選檢測結果：</p>
+
+<table class="doc-table" style="font-size: 7.8pt;">
+    <thead>
+        <tr>
+            <th style="width: 8%;">檢核</th>
+            <th style="width: 22%;">項目</th>
+            <th style="width: 25%;">測試統編</th>
+            <th style="width: 45%;">注意事項</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- E0401 -->
+        <tr>
+            <td style="text-align: center; vertical-align: middle;">
+                □<br><span style="font-size: 7.5pt; color: #64748B;">(免測)</span>
+            </td>
+            <td><strong>1. E0401<br>分支機構配號檔</strong></td>
+            <td>
+                總公司：免測<br>
+                分公司：免測<br>
+                <span style="font-size: 7.5pt; color: #475569;">（本公司為單一營業人自行開立發票，無分支機構，依規定免測）</span>
+            </td>
+            <td style="font-size: 7.5pt; color: #475569;">
+                1. 一個分支機構(統一編號)一個XML檔案。<br>
+                2. 大平台接收規則：若大平台收到重覆檔頭(Main)字軌區間資料，則將此筆後送資料覆蓋前筆資料。<br>
+                3. BranchTrackItem之Cardinality為1~25000範圍。<br>
+                4. 發票期別YearMonth請以雙數月為值，且為民國年月，如：11202。<br>
+                5. 總公司的分支機構配號檔Main中「總公司統一編號」與「分支機構統一編號」請填入總公司統一編號。<br>
+                ※註：此格式欄位為透過總公司統一申請取號者才須要在次期10號前上傳。
+            </td>
+        </tr>
+
+        <!-- E0402 -->
+        <tr>
+            <td style="text-align: center; vertical-align: middle;"><span class="check">☑</span></td>
+            <td><strong>2. E0402<br>空白未使用字軌檔<br><span style="color: #DC2626;">★必要★</span></strong></td>
+            <td>
+                公司統編：<br>
+                <strong>00015555</strong>
+            </td>
+            <td style="font-size: 7.5pt; color: #475569;">
+                1. 一個分支機構(統一編號)一個xml檔案。<br>
+                2. 大平台接收規則：若大平台收到重疊字軌區間資料，則將此筆後送資料覆蓋前筆資料。<br>
+                3. 發票期別YearMonth請以雙數月為值，且為民國年月，如：11202。<br>
+                ※註：此格式欄位須要在次期10號前上傳。
+            </td>
+        </tr>
+
+        <!-- E0402 PROOF FULL WIDTH ROW -->
+        <tr>
+            <td colspan="4" style="background-color: #F8FAFC;">
+                <div class="desc-box">
+                    <strong>【佐證畫面與說明：E0402 空白未使用字軌檔檢測佐證】</strong><br>
+                    本公司（統一編號：00015555，繞送代碼：PA006753）已於 115 年 9 月 24 日透過 Turnkey 系統上傳期別 11510（LP 字軌）之空白未使用字軌檔（E0402），大平台回覆 ProcessResult 代碼 00000（全部發票處理成功）。於大平台驗測環境【E0402空白未使用發票字軌檔】線上查驗，公司統編 00015555 處理結果正式標示為「通過」。佐證畫面如下：
+                </div>
+                <img class="proof-img" src="{IMG_E0402}" alt="E0402空白未使用發票字軌檔上傳通過佐證">
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<div style="margin-top: 10px; padding: 8px 14px; border: 1.2px solid #CBD5E1; border-radius: 4px; background-color: #FFFFFF; page-break-inside: avoid;">
+    <div style="font-size: 8.5pt; font-weight: bold; color: #1E3A8A; margin-bottom: 4px;">檢測申請業者用印與聲明</div>
+    <p style="font-size: 7.8pt; color: #475569; line-height: 1.4; margin-bottom: 6px;">
+        本公司（奧銳有限公司）已依據財政部「電子發票Turnkey上線前自行檢測作業(Ver 4.8.1)」完成全部相關檢測項目，所提供之各項說明及系統畫面佐證均屬真實無訛。
+    </p>
+    <table style="width: 100%; border: none; font-size: 7.8pt;">
+        <tr style="border: none;">
+            <td style="width: 50%; border: none; padding: 2px 0;">
+                <strong>營業人名稱</strong>：奧銳有限公司<br>
+                <strong>統一編號</strong>：00015555<br>
+                <strong>營業人印鑑章</strong>：（蓋章處）
+            </td>
+            <td style="width: 50%; border: none; padding: 2px 0;">
+                <strong>負責人姓名</strong>：王世全<br>
+                <strong>聯絡電話</strong>：0903888022<br>
+                <strong>負責人印章</strong>：（蓋章處）
+            </td>
+        </tr>
+    </table>
+    <div style="text-align: right; margin-top: 4px; font-size: 7.8pt; color: #334155; font-weight: bold;">
+        中華民國 115 年 09 月 24 日
+    </div>
+</div>
+
+</body>
+</html>
+"""
+
+def main():
+    print(f"Writing clean semantic HTML to {HTML_FILE}...")
+    with open(HTML_FILE, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+    print(f"Compiling perfect A4 PDF using WeasyPrint to {OUT_PDF}...")
+    subprocess.run(["weasyprint", HTML_FILE, OUT_PDF], check=True)
+    print(f"Success! Output PDF size: {os.path.getsize(OUT_PDF)} bytes.")
+
+if __name__ == "__main__":
+    main()

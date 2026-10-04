@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<TurnkeyUserConfig> 
+  <db-type>postgresql</db-type>  
+  <jdbc-driver>org.postgresql.Driver</jdbc-driver>  
+  <jdbc-url>jdbc:postgresql://localhost:5432/turnkey</jdbc-url>  
+  <db-user>turnkey</db-user>  
+  <db-password>turnkey</db-password>  
+  <db-encoding>utf-8</db-encoding>  
+  <execute-environment>T</execute-environment>  
+  <charaset-mapping-table/>  
+  <def-path>/invoice/EINVTurnkey</def-path>  
+  <file-log>/invoice/EINVTurnkey/log/Turnkey.log</file-log>  
+  <auto-run>false</auto-run>  
+  <mail-notify>false</mail-notify>  
+  <mail-sender-address/>  
+  <email-address/>  
+  <mail-server/>  
+  <mail-auth>false</mail-auth>  
+  <mail-account/>  
+  <mail-password/>  
+  <mail-notify-cycle>00:01</mail-notify-cycle>  
+  <mail-default-text>false</mail-default-text>  
+  <mail-on-exit/>  
+  <mail-on-system-event/>  
+  <mail-log>/invoice/EINVTurnkey/log/Turnkey_mail.log</mail-log>  
+  <login-id>ADMIN</login-id>  
+  <data-keep-days>30</data-keep-days>  
+  <encrypt-db-pwd>false</encrypt-db-pwd>  
+  <move-to-erpinbox>true</move-to-erpinbox>  
+  <erp-in-box-path/>  
+  <backup-file>true</backup-file>  
+  <reduce-db-log>false</reduce-db-log>  
+  <enable-start-pwd>false</enable-start-pwd>  
+  <start-pwd-verify/>  
+  <monitor-apname>EINVTurnkey</monitor-apname>  
+  <mail-on-monitor-err/>  
+  <delay-reply-mon-time>23:50</delay-reply-mon-time>  
+  <report-enable>true</report-enable>  
+  <report-path/>  
+  <mail-port/>  
+  <db-config-ok>true</db-config-ok>  
+  <locale>2</locale>  
+  <file-encrypt-enable/>  
+  <file-pwd/>  
+  <platform-status>A</platform-status> 
+</TurnkeyUserConfig>

@@ -1,0 +1,39 @@
+# ============================================
+# Git Ignore for Turnkey E-Invoice Project
+# ============================================
+
+# JRE and Runtime Binaries
+jre/
+log/
+*.log
+turnkeyRunningflg
+
+# Temporary / Queue Directories
+DownCast/
+UpCast/
+Pack/
+Unpack/
+SendFile/
+ReceiveFile/
+
+# Database runtime locks and traces
+h2engine/*.lock.db
+h2engine/*.trace.db
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment files containing local secrets
+.env
+!.env.example
+
+# OS / Editor artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*~
