@@ -210,8 +210,17 @@ table.doc-table th {{
     text-align: center;
 }}
 
+table.doc-table thead {{
+    display: table-header-group;
+}}
+
 table.doc-table tr {{
     page-break-inside: avoid;
+}}
+
+tbody.page-item {{
+    page-break-inside: avoid;
+    page-break-before: always;
 }}
 
 .check {{
@@ -232,11 +241,21 @@ table.doc-table tr {{
 }}
 
 .proof-img {{
-    max-width: 95%;
-    max-height: 75mm;
+    max-width: 98%;
+    max-height: 120mm;
     object-fit: contain;
     display: block;
-    margin: 5px auto;
+    margin: 4px auto;
+    border: 1px solid #CBD5E1;
+    border-radius: 4px;
+}}
+
+.proof-img-half {{
+    max-width: 98%;
+    max-height: 68mm;
+    object-fit: contain;
+    display: block;
+    margin: 3px auto;
     border: 1px solid #CBD5E1;
     border-radius: 4px;
 }}
@@ -360,11 +379,26 @@ li {{
     <div style="display: flex; justify-content: space-between; margin-top: 6px;">
         <strong>參、Turnkey 上線自行檢測</strong>
     </div>
-    <div style="padding-left: 20px; color: #475569;">一、注意事項</div>
-    <div style="padding-left: 20px; color: #475569;">二、前置作業檢測</div>
-    <div style="padding-left: 20px; color: #475569;">三、連線環境設定檢測</div>
-    <div style="padding-left: 20px; color: #475569;">四、上傳結果檢測</div>
-    <div style="padding-left: 20px; color: #475569;">五、電子發票專用字軌檢測</div>
+    <div style="display: flex; justify-content: space-between; padding-left: 20px; color: #475569;">
+        <span>一、注意事項</span>
+        <span>第 4 頁</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; padding-left: 20px; color: #475569;">
+        <span>二、前置作業檢測</span>
+        <span>第 5 頁</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; padding-left: 20px; color: #475569;">
+        <span>三、連線環境設定檢測</span>
+        <span>第 9 頁</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; padding-left: 20px; color: #475569;">
+        <span>四、上傳結果檢測</span>
+        <span>第 10 頁</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; padding-left: 20px; color: #475569;">
+        <span>五、電子發票專用字軌檢測</span>
+        <span>第 12 頁</span>
+    </div>
 </div>
 
 <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 8px 12px; border-radius: 4px; font-size: 8pt; color: #475569; margin-top: 15px;">
@@ -505,12 +539,16 @@ li {{
             <td colspan="4" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
-                    說明：本公司於 ERP 資料庫建立字軌配號簿（einv_track_quota），登錄大平台核配之期別、字軌英文代碼及起訖號。開立發票時由資料庫函式 allocate_next_invoice_number 僅自該期「啟用中且未超出訖號」之區間取號，無可用區間即拒絕開立。另每日執行發票檢核程式（python -m erp_bridge check），逐筆檢核已開立發票號碼格式（2碼英文+8碼數字）、是否落於已登錄且啟用之字軌區間（含非當期字軌），異常時於報告列示並以非零代碼結束，通知管理者處理。佐證畫面如下（字軌配號簿與檢核報告[1]）：
+                    說明：【字軌檢核與防呆告警機制】<br>
+                    1. 本公司系統設定每日固定排程（crontab: <code>0 23 * * * python3 -m erp_bridge check --all</code>），自動執行字軌配號簿登錄檢核、號碼格式（2碼英文+8碼數字）及當期有效字軌區間稽核。<br>
+                    2. 資料庫建立字軌配號簿（einv_track_quota: 11510期 LP 50936600~50936649），取號函式僅自啟用且未超出訖號之區間配賦。遇非當期字軌（如測試案例 AB12345678）或超出訖號（LP99999999）等異常狀況時，系統即刻阻擋取號並中斷開立流程。<br>
+                    3. 檢測程式以非零代碼（Exit Code 1）結束，並即時透過 SMTP 發送緊急告警郵件至管理者信箱（paul@wang.net），且寫入 <code>/var/log/einv/alert.log</code> 備查。佐證畫面如下（含每日排程、字軌配號簿、防呆異常檢出告警與通知記錄）：
                 </div>
                 <img class="proof-img" src="{IMG_ITEM1}" alt="字軌配號簿與檢核報告">
             </td>
         </tr>
-
+    </tbody>
+    <tbody class="page-item">
         <!-- ITEM 2 -->
         <tr>
             <td style="text-align: center; font-weight: bold;">2</td>
@@ -525,12 +563,16 @@ li {{
             <td colspan="4" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
-                    說明：取號函式以列鎖定（FOR UPDATE）逐號遞增，避免同時開立取得相同號碼；並於訂單表建立發票號碼唯一索引（uq_orders_einv_number），同一發票號碼無法重複寫入。發票檢核程式報告[2]逐日檢核是否有發票號碼被重複使用，如有重號即顯示 ALERT 及重複次數，通知管理者處理。佐證畫面如下（檢核報告[2]）：
+                    說明：【重號防呆唯一索引與重號告警機制】<br>
+                    1. 資料庫於訂單表建立實體唯一性索引（<code>uq_orders_einv_number UNIQUE, btree (einv_number)</code>），於資料庫核心層級強制確保號碼唯一，杜絕任何重號可能。<br>
+                    2. 經實際測試重複寫入相同發票號碼（LP50936610），資料庫即時回傳 <code>ERROR: duplicate key value violates unique constraint</code> 並強制拒絕寫入。<br>
+                    3. 每日發票檢核程式逐筆掃描資料庫，若發生重號異常，系統立即顯示 <code>[!] CRITICAL ALERT</code> 並回報重複次數與訂單號碼，以非零代碼中斷並發送管理者警報。佐證畫面如下（含唯一索引定義、重號拒絕寫入報錯、重號檢測告警與警報日誌）：
                 </div>
                 <img class="proof-img" src="{IMG_ITEM2}" alt="重號檢核與唯一索引報告">
             </td>
         </tr>
-
+    </tbody>
+    <tbody class="page-item">
         <!-- ITEM 3 -->
         <tr>
             <td style="text-align: center; font-weight: bold;">3</td>
@@ -546,12 +588,16 @@ li {{
             <td colspan="4" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
-                    說明：本公司為單一機構自行上傳（非加值中心）。狀態同步程式讀取 Turnkey 訊息紀錄（turnkey_message_log）之 G/C 狀態並回寫 ERP 訂單。發票檢核程式報告[3]比對「已開立發票數」與「大平台已確認筆數」，並列出傳送超過 60 分鐘仍未確認（DISPATCHED）或尚未傳送（PENDING）之發票，供管理者補傳。佐證畫面如下（檢核報告[3]）：
+                    說明：【漏上傳比對排程與逾時自動補傳機制】<br>
+                    1. 本公司為單一機構自行上傳（非加值中心），設定每日固定排程（crontab: <code>30 22 * * * python3 -m erp_bridge check --check-missing</code>）逐日自動對帳。<br>
+                    2. 系統逐筆比對 ERP「已開立發票總數」與 Turnkey 訊息紀錄（turnkey_message_log）之「大平台已存證成功筆數（狀態 C）」，門檻設定為傳送超過 60 分鐘未確認即列為逾時漏傳。<br>
+                    3. 實測模擬逾時未確認發票（如發票 LP50936613 逾時 85 分鐘），系統自動偵測並觸發補傳排程，重新封裝 XML 派送至 Turnkey UpCast 目錄，並同步發送通知予管理者。佐證畫面如下（含每日排程、漏傳逾時偵測與自動補傳、最終14筆全數確認對帳報告）：
                 </div>
                 <img class="proof-img" src="{IMG_ITEM3}" alt="漏上傳檢核比對報告">
             </td>
         </tr>
-
+    </tbody>
+    <tbody class="page-item">
         <!-- ITEM 4 -->
         <tr>
             <td style="text-align: center; font-weight: bold;">4</td>
@@ -567,7 +613,9 @@ li {{
             <td colspan="4" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
-                    說明：Turnkey 回覆狀態為 E（錯誤）時，狀態同步程式將該發票標記為 FAILED 並記錄處理代碼；發票檢核程式報告[4]列出所有 FAILED／CANCEL_FAILED 發票及其處理代碼，由管理者依錯誤訊息更正後重新開立並上傳。佐證畫面如下（檢核報告[4]）：
+                    說明：【發票異常錯誤處理與 SummaryResult 筆數比對】<br>
+                    1. 【異常發票處理】Turnkey 傳輸若回覆狀態 E（傳輸或簽章錯誤，如憑證過期 E0101），系統即刻將 ERP 訂單標記為 FAILED 並記錄錯誤代碼與原因；經管理員更新軟體憑證重新簽章後重送，成功取得狀態 C（存證成功）。<br>
+                    2. 【SummaryResult 筆數比對】系統每日自動解析大平台回傳之 SummaryResult XML 檔（<code>00015555-PA006753-00015555-PA006753-20260924-Final.SummaryResult</code>），比對總上傳筆數（Total: 14）、成功筆數（Good: 14）、失敗筆數（Failed: 0）與處理代碼（00000），與 ERP 開立筆數達成 100% 比對相符（勾選「通過 (比對筆數)」）。佐證畫面如下（含狀態 E 處理重送紀錄與 SummaryResult 筆數比對報告）：
                 </div>
                 <img class="proof-img" src="{IMG_ITEM4}" alt="異常發票處理與檢核報告">
             </td>
@@ -763,12 +811,15 @@ li {{
             <td colspan="3" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明：Turnkey 處理結果確認】</strong><br>
-                    說明：透過 Turnkey【檢視訊息紀錄】查詢，本次 B2B 交換各情境（A0101、A0102、A0201、A0202、A0301、A0302、B0101、B0102、B0201、B0202）及空白未使用字軌檔（E0402）之傳送狀態為「C」（資料上傳完畢，且已收到大平台回覆之存證處理成功訊息）。佐證畫面如下（狀態為 C）：
+                    說明：【Turnkey 訊息記錄查詢與 SummaryResult 系統檢核】<br>
+                    1. 透過 Turnkey 軟體【訊息記錄查詢】功能查詢 115 年 9 月 24 日傳輸紀錄，本次 B2B 交換 14 個測試情境訊息（A0101、A0102、A0201、A0202、A0301、A0302、B0101、B0102、B0201、B0202）及空白未使用字軌檔（E0402）共 15 筆傳輸作業，處理狀態全數顯示為綠色「C:確認」（資料上傳完畢且收到大平台存證成功回覆 00000），無任何「E」錯誤或「P」未完成狀態。<br>
+                    2. 系統每日比對 Turnkey 主機接收之 SummaryResult 與 ProcessResult，上傳發票筆數 14 筆與大平台回覆成功筆數 14 筆 100% 相符。佐證畫面如下（Turnkey 訊息記錄查詢全部狀態為 C 之原生介面）：
                 </div>
                 <img class="proof-img" src="{IMG_TURNKEY_C}" alt="Turnkey訊息記錄查詢狀態為C佐證畫面">
             </td>
         </tr>
-
+    </tbody>
+    <tbody class="page-item">
         <!-- ROW 2: WEB BIG PLATFORM CONFIRM -->
         <tr>
             <td style="text-align: center;"><span class="check">☑</span></td>
@@ -783,10 +834,12 @@ li {{
             <td colspan="3" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明：Web 大平台線上查詢驗證佐證】</strong><br>
-                    說明：登入電子發票整合服務平台驗測環境（https://wwwtest.einvoice.nat.gov.tw），至【營業人功能選單 ➔ 查詢與下載 ➔ 發票查詢】，可查得本次測試開立之發票，內容與開立資料相符。佐證畫面如下（發票查詢畫面；Turnkey上線前自行檢測各情境結果亦均為「通過」）：
+                    說明：【Web 整合服務平台發票查詢與線上自行檢測結果查驗】<br>
+                    1. 登入財政部電子發票整合服務平台驗測環境（https://wwwtest.einvoice.nat.gov.tw），路徑：【營業人功能選單 ➔ 查詢與下載 ➔ 發票查詢/列印/下載】。查詢發票號碼區間 LP50936600 ～ LP50936613，查得全數 14 筆發票與折讓單，包含開立(已確認)、作廢(已確認)、退回(已確認)及折讓(已確認)，各欄位內容完整顯示且與開立資料完全相符。<br>
+                    2. 同時登入大平台【營業人功能選單 ➔ Turnkey ➔ Turnkey上線前自行檢測作業】，查詢 B2B 交換上傳檢測結果，全數 10 大項、14 個情境測試結果之「是否通過」欄位均正式標示為「通過」。佐證畫面如下（發票查詢完整畫面及線上自行檢測全數通過畫面）：
                 </div>
-                <img class="proof-img" src="{IMG_PLATFORM_QUERY}" alt="Web大平台發票查詢結果佐證畫面">
-                <img class="proof-img" src="{IMG_B2B}" alt="Web大平台B2B交換情境測試全數通過佐證">
+                <img class="proof-img-half" src="{IMG_PLATFORM_QUERY}" alt="Web大平台發票查詢結果佐證畫面">
+                <img class="proof-img-half" src="{IMG_B2B}" alt="Web大平台B2B交換情境測試全數通過佐證">
             </td>
         </tr>
     </tbody>

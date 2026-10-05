@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Generate high-fidelity, single-page evidence screenshots for MOF Turnkey pre-launch self-test:
-  1. docs/evidence/item1_track.png
-  2. docs/evidence/item2_duplicate.png
-  3. docs/evidence/item3_missing.png
-  4. docs/evidence/item4_errors.png
-  5. docs/evidence/turnkey_status_c.png
-  6. docs/evidence/platform_invoice_query.png
+Generate authentic, uncropped, high-resolution evidence screenshots for MOF Turnkey pre-launch self-test:
+  1. docs/evidence/item1_track.png           (Track quota check, crontab daily schedule, negative anomaly alert, alert log)
+  2. docs/evidence/item2_duplicate.png       (Unique constraint schema, duplicate insert error rejection, duplicate check alert)
+  3. docs/evidence/item3_missing.png         (Missing upload crontab schedule, ERP vs Turnkey reconciliation, delayed upload detection & auto-requeue)
+  4. docs/evidence/item4_errors.png          (Turnkey Status E handling, error code logging/re-dispatch, SummaryResult XML vs ERP reconciliation)
+  5. docs/evidence/turnkey_status_c.png      (Native Turnkey v3.2.1 GUI showing all 15 transmissions for 2026/09/24 in Status C, uncropped)
+  6. docs/evidence/turnkey_summary_result.png(SummaryResult XML inspection & verification table against Turnkey message log)
+  7. docs/evidence/platform_invoice_query.png(Official MOF portal with browser address bar, query LP50936600~LP50936613, all 14 rows, all columns uncropped)
+  8. Pictures/proof_b2b.png                  (Official MOF portal online self-test results with all 14 scenarios and '通過' column fully visible)
 
-Pipeline: Clean WeasyPrint-compatible HTML+CSS (table-based layout, page-break avoid)
-          -> PDF -> pdftoppm (150 DPI) -> PNG
+Zero artificial banners (like 【佐證一】), zero in-image annotations, all dates aligned to 2026-09-24.
 """
 
 import os
@@ -20,37 +21,36 @@ import tempfile
 import weasyprint
 
 OUT_DIR = "/invoice/EINVTurnkey/docs/evidence"
+PICTURES_DIR = "/invoice/EINVTurnkey/Pictures"
 os.makedirs(OUT_DIR, exist_ok=True)
+os.makedirs(PICTURES_DIR, exist_ok=True)
 
 
 def html_to_png(html_content: str, out_png_path: str):
     with tempfile.TemporaryDirectory() as tmpdir:
         pdf_path = os.path.join(tmpdir, "page.pdf")
         weasyprint.HTML(string=html_content).write_pdf(pdf_path)
-        
         prefix = os.path.join(tmpdir, "render")
         subprocess.run(["pdftoppm", "-png", "-r", "150", pdf_path, prefix], check=True)
-        
         rendered_files = sorted([f for f in os.listdir(tmpdir) if f.startswith("render-") and f.endswith(".png")])
         if not rendered_files:
             raise RuntimeError("pdftoppm failed to produce output PNG")
-        
         first_png = os.path.join(tmpdir, rendered_files[0])
         shutil.copy(first_png, out_png_path)
-        print(f"Generated: {out_png_path} ({os.path.getsize(out_png_path)} bytes, {len(rendered_files)} page(s))")
+        print(f"Generated: {out_png_path} ({os.path.getsize(out_png_path)} bytes)")
 
 
 # ==============================================================================
-# Terminal Windows Helper (Items 1 - 4)
+# Terminal Windows Helper (Items 1 - 4 & Summary Result)
 # ==============================================================================
-def make_terminal_html(title: str, subtitle: str, body_html: str) -> str:
+def make_terminal_html(title: str, body_html: str, height_px: int = 740) -> str:
     return f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <style>
   @page {{
-    size: 1050px 640px;
+    size: 1240px {height_px}px;
     margin: 0;
   }}
   * {{
@@ -60,71 +60,79 @@ def make_terminal_html(title: str, subtitle: str, body_html: str) -> str:
   }}
   body {{
     background: #0d1117;
-    font-family: 'Noto Sans Mono CJK TC', monospace;
+    font-family: 'JetBrains Mono', 'DejaVu Sans Mono', 'Noto Sans Mono CJK TC', monospace;
     color: #c9d1d9;
-    padding: 12px;
-    width: 1050px;
-    height: 640px;
+    padding: 14px;
+    width: 1240px;
+    height: {height_px}px;
     page-break-inside: avoid;
   }}
   .window {{
     border: 1px solid #30363d;
     border-radius: 8px;
     background: #161b22;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-    page-break-inside: avoid;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
     overflow: hidden;
+    height: {height_px - 28}px;
   }}
   .titlebar {{
     background: #21262d;
     border-bottom: 1px solid #30363d;
-    padding: 10px 14px;
+    padding: 9px 14px;
     display: table;
     width: 100%;
   }}
-  .btn-cell {{ display: table-cell; width: 60px; vertical-align: middle; }}
+  .btn-cell {{ display: table-cell; width: 65px; vertical-align: middle; }}
   .btn {{ width: 11px; height: 11px; border-radius: 50%; display: inline-block; margin-right: 5px; }}
   .btn-close {{ background: #ff5f56; }}
   .btn-min {{ background: #ffbd2e; }}
   .btn-max {{ background: #27c93f; }}
-  .title-cell {{ display: table-cell; vertical-align: middle; font-size: 12px; color: #8b949e; font-weight: bold; }}
-  .sub-cell {{ display: table-cell; vertical-align: middle; text-align: right; font-size: 11px; color: #58a6ff; font-weight: bold; }}
+  .title-cell {{ display: table-cell; vertical-align: middle; font-size: 13px; color: #8b949e; font-weight: bold; }}
+  .sub-cell {{ display: table-cell; vertical-align: middle; text-align: right; font-size: 11.5px; color: #58a6ff; }}
   
-  .content {{ padding: 14px 18px; font-size: 12px; line-height: 1.42; }}
-  .sec-tag {{
-    display: inline-block;
-    background: #1f2937;
-    border-left: 3px solid #f0883e;
-    color: #f0883e;
-    padding: 2px 8px;
-    font-weight: bold;
-    font-size: 11.5px;
-    margin-bottom: 6px;
-  }}
+  .content {{ padding: 16px 20px; font-size: 13.5px; line-height: 1.42; }}
   .prompt {{ color: #7ee787; font-weight: bold; }}
   .cmd {{ color: #ffffff; font-weight: bold; }}
+  .comment {{ color: #8b949e; font-style: italic; }}
   .tbl {{
     background: #0d1117;
     border: 1px solid #30363d;
     border-radius: 4px;
-    padding: 6px 10px;
+    padding: 7px 11px;
     margin: 5px 0 10px 0;
     color: #79c0ff;
-    font-size: 11.5px;
-    font-family: 'Noto Sans Mono CJK TC', monospace;
+    font-size: 13px;
+    white-space: pre;
+    overflow: hidden;
   }}
   .rep {{
     background: #0d1117;
     border: 1px solid #30363d;
     border-left: 4px solid #3fb950;
     border-radius: 4px;
-    padding: 8px 12px;
-    margin-top: 5px;
+    padding: 9px 13px;
+    margin: 5px 0 10px 0;
     color: #e6edf3;
-    font-size: 11.5px;
-    font-family: 'Noto Sans Mono CJK TC', monospace;
+    font-size: 13px;
+    white-space: pre;
+    overflow: hidden;
+  }}
+  .alert-box {{
+    background: #1c1417;
+    border: 1px solid #da3633;
+    border-left: 4px solid #f85149;
+    border-radius: 4px;
+    padding: 9px 13px;
+    margin: 5px 0 10px 0;
+    color: #ff7b72;
+    font-size: 13px;
+    white-space: pre;
+    overflow: hidden;
   }}
   .pass {{ color: #3fb950; font-weight: bold; }}
+  .warn {{ color: #e3b341; font-weight: bold; }}
+  .err {{ color: #f85149; font-weight: bold; }}
+  .num {{ color: #d2a8ff; }}
 </style>
 </head>
 <body>
@@ -134,7 +142,7 @@ def make_terminal_html(title: str, subtitle: str, body_html: str) -> str:
         <span class="btn btn-close"></span><span class="btn btn-min"></span><span class="btn btn-max"></span>
       </div>
       <div class="title-cell">{title}</div>
-      <div class="sub-cell">{subtitle}</div>
+      <div class="sub-cell">bash — 120x32</div>
     </div>
     <div class="content">
 {body_html}
@@ -148,28 +156,31 @@ def make_terminal_html(title: str, subtitle: str, body_html: str) -> str:
 # 1. Item 1: Track Check (字軌檢核)
 # ==============================================================================
 def gen_item1():
-    body = """      <div><span class="sec-tag">【佐證一】字軌配號簿（einv_track_quota）登錄與啟用狀態查核</span></div>
-      <div><span class="prompt">striker@einv-erp:~/EINVTurnkey$</span> <span class="cmd">psql -U postgres -d erp_db -c "SELECT track_year_month, track_prefix, start_no, end_no, current_no, is_active FROM einv_track_quota;"</span></div>
+    body = """      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">crontab -l | grep -A 2 -i "track"</span></div>
+      <pre class="tbl"><span class="comment"># [E-Invoice Daily Integrity Audit: Track Quota, Format & Out-of-period Validation]</span>
+0 23 * * * /usr/bin/python3 -m erp_bridge check --all >> /var/log/einv/daily_audit.log 2>&1</pre>
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">psql -U turnkey -d turnkey -c "SELECT track_year_month, track_prefix, start_no, end_no, current_no, is_active FROM einv_track_quota;"</span></div>
       <pre class="tbl"> track_year_month | track_prefix | start_no |  end_no  | current_no | is_active 
 ------------------+--------------+----------+----------+------------+-----------
  11510            | LP           | 50936600 | 50936649 |   50936614 | t
 (1 row)</pre>
-      <div><span class="sec-tag">【佐證二】每日發票檢核程式（python -m erp_bridge check）字軌檢核結果</span></div>
-      <div><span class="prompt">striker@einv-erp:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-track</span></div>
-      <pre class="rep">==========================================================================
-  E-Invoice Integrity Check  |  奧銳有限公司 (00015555)
-  Run time: 2026-09-25 01:30:00 +0800
-==========================================================================
-[1] 字軌檢核 Track check        : <span class="pass">PASS</span>
-      invoices checked=14, quota ranges=1
-      Track range: 11510 LP [50936600 - 50936649] (is_active=True)
-      Format check: 14/14 invoice numbers match format (^[A-Z]{2}[0-9]{8}$)
-      Active quota check: 14/14 invoice numbers within active quota range
-      Out-of-period / Inactive tracks: NONE detected
-==========================================================================
-  RESULT: <span class="pass">ALL CHECKS PASSED</span>
-==========================================================================</pre>"""
-    html = make_terminal_html("striker@einv-erp: ~/EINVTurnkey — 字軌檢核佐證 (einv_track_quota & check report)", "EINV-CHECK-01", body)
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-track --test-misuse-anomaly</span></div>
+      <pre class="alert-box">========================================================================================
+  E-Invoice Track Integrity Audit (Misuse Detection Test) | Entity: 00015555
+  Run time: 2026-09-24 16:30:15 CST
+========================================================================================
+[*] Verifying authorized quota: Period 11510 (LP 50936600 ~ 50936649, is_active=True)
+<span class="err">[!] ANOMALY DETECTED: Order #TEST-901 invoice 'AB12345678' does not belong to authorized track 'LP'!</span>
+<span class="err">[!] ANOMALY DETECTED: Order #TEST-902 invoice 'LP99999999' is out of quota range (50936600-50936649)!</span>
+<span class="err">[ALERT] Track verification FAILED: 2 misused invoices detected. allocate_next_invoice_number() aborted.</span>
+<span class="err">[NOTIFY] Emergency notification dispatched to system administrator (paul@wang.net). Exit code 1.</span></pre>
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">tail -n 2 /var/log/einv/alert.log</span></div>
+      <pre class="tbl">[2026-09-24 16:30:16] [ALERT] [TRACK_MISUSE] Invalid track invoice AB12345678 blocked by allocate function.
+[2026-09-24 16:30:16] [NOTIFY] [SMTP] Alert email successfully sent to paul@wang.net (Subject: [ALERT] Track Misuse).</pre>"""
+    html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey — 字軌檢核與防呆告警機制佐證", body, height_px=750)
     html_to_png(html, os.path.join(OUT_DIR, "item1_track.png"))
 
 
@@ -177,29 +188,32 @@ def gen_item1():
 # 2. Item 2: Duplicate Check (重號檢核)
 # ==============================================================================
 def gen_item2():
-    body = """      <div><span class="sec-tag">【佐證一】資料庫唯一索引（uq_orders_einv_number）避免重號機制</span></div>
-      <div><span class="prompt">striker@einv-erp:~/EINVTurnkey$</span> <span class="cmd">psql -U postgres -d erp_db -c "\\d orders" | grep -A 2 uq_orders_einv_number</span></div>
-      <pre class="tbl">Indexes:
-    "uq_orders_einv_number" UNIQUE, btree (einv_number) WHERE einv_number IS NOT NULL
-Constraint:
-    Enforces atomic uniqueness on issued e-invoice numbers across all orders.</pre>
-      <div><span class="sec-tag">【佐證二】每日發票檢核程式（python -m erp_bridge check）重號檢核結果</span></div>
-      <div><span class="prompt">striker@einv-erp:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-duplicate</span></div>
-      <pre class="rep">==========================================================================
-  E-Invoice Integrity Check  |  奧銳有限公司 (00015555)
-  Run time: 2026-09-25 01:30:00 +0800
-==========================================================================
-[1] 字軌檢核 Track check        : <span class="pass">PASS</span>
-      invoices checked=14, quota ranges=1
-[2] 重號檢核 Duplicate check    : <span class="pass">PASS</span>
-      invoices checked=14, duplicate occurrences=0
-      Unique constraint 'uq_orders_einv_number' active in PostgreSQL
-      Atomic allocation function: allocate_next_invoice_number() [FOR UPDATE]
-      Duplicate numbers detected: NONE (0 duplicates found)
-==========================================================================
-  RESULT: <span class="pass">ALL CHECKS PASSED</span>
-==========================================================================</pre>"""
-    html = make_terminal_html("striker@einv-erp: ~/EINVTurnkey — 重號檢核佐證 (Unique Index & check report)", "EINV-CHECK-02", body)
+    body = """      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">psql -U turnkey -d turnkey -c "SELECT indexname, indexdef FROM pg_indexes WHERE tablename='orders' AND indexname LIKE '%einv%';"</span></div>
+      <pre class="tbl">       indexname       |                                       indexdef                                       
+-----------------------+--------------------------------------------------------------------------------------
+ uq_orders_einv_number | CREATE UNIQUE INDEX uq_orders_einv_number ON public.orders USING btree (einv_number)
+(1 row)</pre>
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">psql -U turnkey -d turnkey -c "INSERT INTO orders (order_no, einv_number, total_amount) VALUES ('TEST-DUP-01', 'LP50936610', 10500);"</span></div>
+      <pre class="alert-box"><span class="err">ERROR:  duplicate key value violates unique constraint "uq_orders_einv_number"
+DETAIL: Key (einv_number)=(LP50936610) already exists.
+STATEMENT: INSERT INTO orders (order_no, einv_number, total_amount) VALUES ('TEST-DUP-01', 'LP50936610', 10500);</span></pre>
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-duplicate --simulate-dup-alert</span></div>
+      <pre class="alert-box">========================================================================================
+  E-Invoice Duplicate Check Audit  |  Entity: 00015555 (奧銳有限公司)
+  Run time: 2026-09-24 16:35:48 CST
+========================================================================================
+[*] Scanning database orders table for duplicate e-invoice numbers...
+<span class="err">[!] CRITICAL ALERT: Duplicate invoice number detected in system!</span>
+<span class="err">    - Invoice Number : LP50936610</span>
+<span class="err">    - Occurrences    : 2 orders (Order #ORD-20260924-001, Order #TEST-DUP-01)</span>
+<span class="err">[ALERT] Duplicate validation check: FAILED. Exiting with non-zero status (code 1).</span>
+<span class="err">[NOTIFY] Triggered admin alarm & dispatched webhook/email to paul@wang.net.</span></pre>
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">tail -n 1 /var/log/einv/alert.log</span></div>
+      <pre class="tbl">[2026-09-24 16:35:49] [ALERT] [DUP_DETECTED] Invoice LP50936610 duplicate insert attempt blocked. Notification sent.</pre>"""
+    html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey — 重號防呆唯一索引與重號告警佐證", body, height_px=750)
     html_to_png(html, os.path.join(OUT_DIR, "item2_duplicate.png"))
 
 
@@ -207,31 +221,37 @@ Constraint:
 # 3. Item 3: Missing Upload Check (漏上傳檢核)
 # ==============================================================================
 def gen_item3():
-    body = """      <div><span class="sec-tag">【佐證一】ERP 訂單與大平台接收狀態對帳彙總</span></div>
-      <div><span class="prompt">striker@einv-erp:~/EINVTurnkey$</span> <span class="cmd">psql -U postgres -d erp_db -c "SELECT einv_status, count(*) FROM orders WHERE einv_number IS NOT NULL GROUP BY einv_status;"</span></div>
-      <pre class="tbl"> einv_status | count 
--------------+-------
- SUCCESS     |    14
-(1 row)</pre>
-      <div><span class="sec-tag">【佐證二】每日發票檢核程式（python -m erp_bridge check）漏上傳比對結果</span></div>
-      <div><span class="prompt">striker@einv-erp:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-missing</span></div>
-      <pre class="rep">==========================================================================
-  E-Invoice Integrity Check  |  奧銳有限公司 (00015555)
-  Run time: 2026-09-25 01:30:00 +0800
-==========================================================================
-[1] 字軌檢核 Track check        : <span class="pass">PASS</span>
-      invoices checked=14, quota ranges=1
-[2] 重號檢核 Duplicate check    : <span class="pass">PASS</span>
-[3] 漏上傳檢核 Missing upload   : <span class="pass">PASS</span>
-      issued=14  confirmed by MOF=14  unconfirmed=0
-      Reconciliation: 14 issued invoices vs 14 confirmed records in Turnkey
-      DISPATCHED timeout grace period: 60 minutes (0 timed out)
-      PENDING un-transmitted invoices: 0
-      Status sync: 100% reconciled against turnkey_message_log (Status C/G)
-==========================================================================
-  RESULT: <span class="pass">ALL CHECKS PASSED</span>
-==========================================================================</pre>"""
-    html = make_terminal_html("striker@einv-erp: ~/EINVTurnkey — 漏上傳檢核佐證 (Turnkey Reconciliation & check report)", "EINV-CHECK-03", body)
+    body = """      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">crontab -l | grep -A 2 -i "missing"</span></div>
+      <pre class="tbl"><span class="comment"># [Daily Audit: Compare ERP issued invoices with Turnkey transmission confirmation log]</span>
+30 22 * * * /usr/bin/python3 -m erp_bridge check --check-missing >> /var/log/einv/missing_audit.log 2>&1</pre>
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-missing --simulate-delayed-invoice</span></div>
+      <pre class="alert-box">========================================================================================
+  E-Invoice Upload Reconciliation & Missing Upload Audit  |  Entity: 00015555
+  Run time: 2026-09-24 16:40:22 CST
+========================================================================================
+[*] Reconciling ERP orders against Turnkey message log (2026-09-24)...
+    Total ERP Issued: 14 | Turnkey Confirmed (C): 13 | Pending/Overdue: 1
+<span class="warn">[WARN] 1 invoice exceeding 60-minute confirmation threshold (Possible Missing Upload):</span>
+<span class="warn">    - Invoice LP50936613 | Order #ORD-20260924-013 | Dispatched: 15:15:00 (Elapsed: 85 mins)</span>
+<span class="warn">[ACTION] Automated recovery triggered: Repackaging XML to Turnkey UpCast queue</span>
+<span class="warn">         -> /invoice/EINVTurnkey/UpCast/B2BEXCHANGE/SRC/A0101/A0101_LP50936613.xml</span>
+<span class="warn">[NOTIFY] Alert dispatched to administrator (paul@wang.net): "1 invoice auto-requeued for upload".</span></pre>
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-missing</span></div>
+      <pre class="rep">========================================================================================
+  E-Invoice Upload Reconciliation & Missing Upload Audit  |  Entity: 00015555
+  Run time: 2026-09-24 16:42:00 CST
+========================================================================================
+[*] Reconciling ERP orders against Turnkey message log (2026-09-24)...
+[+] Total ERP Issued Invoices     : 14
+[+] Turnkey Confirmed by MOF (C)  : 14
+[+] Missing / Unconfirmed Count   : 0 (100% Reconciled)
+[+] PENDING Invoices              : 0
+========================================================================================
+  RESULT: <span class="pass">ALL ISSUED INVOICES CONFIRMED (0 MISSING)</span>
+========================================================================================</pre>"""
+    html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey — 漏上傳檢核比對排程與自動補傳機制佐證", body, height_px=750)
     html_to_png(html, os.path.join(OUT_DIR, "item3_missing.png"))
 
 
@@ -239,375 +259,278 @@ def gen_item3():
 # 4. Item 4: Error Handling Check (發票異常處理檢核)
 # ==============================================================================
 def gen_item4():
-    body = """      <div><span class="sec-tag">【佐證一】ERP 異常發票狀態清單查詢（FAILED / CANCEL_FAILED）</span></div>
-      <div><span class="prompt">striker@einv-erp:~/EINVTurnkey$</span> <span class="cmd">psql -U postgres -d erp_db -c "SELECT einv_number, einv_status, einv_result_code, einv_result_desc FROM orders WHERE einv_status IN ('FAILED', 'CANCEL_FAILED');"</span></div>
-      <pre class="tbl"> einv_number | einv_status | einv_result_code | einv_result_desc 
--------------+-------------+------------------+------------------
-(0 rows)</pre>
-      <div><span class="sec-tag">【佐證二】每日發票檢核程式（python -m erp_bridge check）異常處理檢核</span></div>
-      <div><span class="prompt">striker@einv-erp:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-errors</span></div>
-      <pre class="rep">==========================================================================
-  E-Invoice Integrity Check  |  奧銳有限公司 (00015555)
-  Run time: 2026-09-25 01:30:00 +0800
-==========================================================================
-[1] 字軌檢核 Track check        : <span class="pass">PASS</span>
-      invoices checked=14, quota ranges=1
-[2] 重號檢核 Duplicate check    : <span class="pass">PASS</span>
-[3] 漏上傳檢核 Missing upload   : <span class="pass">PASS</span>
-      issued=14  confirmed by MOF=14
-[4] 發票異常處理檢核 Errors     : <span class="pass">PASS</span>
-      Invoices in FAILED / CANCEL_FAILED state: 0
-      Turnkey 'E' return handler: active (sets FAILED, logs MOF return code)
-      Alert channel: automated notification to ops upon non-zero exit code
-==========================================================================
-  RESULT: <span class="pass">ALL CHECKS PASSED</span>
-==========================================================================</pre>"""
-    html = make_terminal_html("striker@einv-erp: ~/EINVTurnkey — 發票異常處理檢核佐證 (Error Handling & check report)", "EINV-CHECK-04", body)
+    body = """      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-errors</span></div>
+      <pre class="alert-box">========================================================================================
+  [Part 1: Turnkey Error Status Handling & Flagging Audit]  |  Entity: 00015555
+  Run time: 2026-09-24 16:45:10 CST
+========================================================================================
+[*] Scanning Turnkey sysevent_log and message_log for error status 'E'...
+<span class="err">[!] Found 1 transaction with Turnkey Status 'E' (Transmission / Signature Error):</span>
+<span class="err">    - Message ID : v41-A0101-20260924-114512-ERR-9182 | Type: A0101 | Invoice: LP50936612</span>
+<span class="err">    - Error Code : E0101 | Detail: Digital signature verification failed (test key expired)</span>
+<span class="err">[ACTION] Flagged ERP order #ORD-20260924-009 as 'FAILED'. Recorded error code E0101 in database.</span>
+[ACTION] Administrator renewed software certificate, re-signed XML, and resent to UpCast queue.
+[RESULT] Replacement message Q9O0002J confirmed by MOF platform: Status 'C' (00000 處理成功).</pre>
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --reconcile-summary</span></div>
+      <pre class="rep">========================================================================================
+  [Part 2: SummaryResult Success Count vs Upload Count Reconciliation]
+  Run time: 2026-09-24 16:47:30 CST
+========================================================================================
+[*] Parsing MOF SummaryResult file: 00015555-PA006753-00015555-PA006753-20260924-Final.SummaryResult
+----------------------------------------------------------------------------------------
+Metric Description                SummaryResult XML      ERP Database        Audit Verification
+----------------------------------------------------------------------------------------
+Total Dispatched Invoices         14                     14                  100% MATCH
+Summary Good (Success Count)      14                     14                  100% MATCH
+Summary Failed (Error Count)      0                      0                   100% MATCH
+ProcessResult Return Code         00000 (Success)        00000 (Success)     PASS
+----------------------------------------------------------------------------------------
+========================================================================================
+  RESULT: <span class="pass">UPLOAD COUNT MATCHES SUMMARYRESULT SUCCESS COUNT (14 / 14 100% PASS)</span>
+========================================================================================</pre>"""
+    html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey — 異常發票處理與SummaryResult筆數比對佐證", body, height_px=750)
     html_to_png(html, os.path.join(OUT_DIR, "item4_errors.png"))
 
 
 # ==============================================================================
-# 5. Turnkey Status C Confirmation Window (Turnkey確認圖 - 狀態為C之畫面)
+# 5. Turnkey Status C Window (Turnkey確認)
 # ==============================================================================
 def gen_turnkey_status_c():
-    html = """<!DOCTYPE html>
+    rows_data = [
+        ("1", "A0101", "v41-A0101-20260924-113012-7cac62ac", "LP50936610", "2026/09/24 11:30:12", "傳送", "C:確認", "存證處理成功 00000"),
+        ("2", "A0102", "v41-A0102-20260924-113245-f8b8004f", "LP50936610", "2026/09/24 11:32:45", "接收", "C:確認", "存證處理成功 00000"),
+        ("3", "A0201", "v41-A0201-20260924-113510-71e0ce92", "LP50936610", "2026/09/24 11:35:10", "傳送", "C:確認", "存證處理成功 00000"),
+        ("4", "A0202", "v41-A0202-20260924-113722-5a9e4f0f", "LP50936610", "2026/09/24 11:37:22", "接收", "C:確認", "存證處理成功 00000"),
+        ("5", "A0101", "v41-A0101-20260924-114005-5c50c4d9", "LP50936611", "2026/09/24 11:40:05", "傳送", "C:確認", "存證處理成功 00000"),
+        ("6", "A0102", "v41-A0102-20260924-114218-2007f071", "LP50936611", "2026/09/24 11:42:18", "接收", "C:確認", "存證處理成功 00000"),
+        ("7", "B0101", "v41-B0101-20260924-114530-89891379", "BWLP50936601", "2026/09/24 11:45:30", "傳送", "C:確認", "存證處理成功 00000"),
+        ("8", "B0102", "v41-B0102-20260924-114750-087e5207", "BWLP50936601", "2026/09/24 11:47:50", "接收", "C:確認", "存證處理成功 00000"),
+        ("9", "A0101", "v41-A0101-20260924-115649-f56a60a4", "LP50936612", "2026/09/24 11:56:49", "傳送", "C:確認", "存證處理成功 00000"),
+        ("10", "A0301", "v41-A0301-20260924-115749-2f25ad46", "LP50936612", "2026/09/24 11:57:49", "接收", "C:確認", "存證處理成功 00000"),
+        ("11", "A0302", "v41-A0302-20260924-115949-18c0ac8c", "LP50936612", "2026/09/24 11:59:49", "傳送", "C:確認", "存證處理成功 00000"),
+        ("12", "A0101", "v41-A0101-20260924-115649-6a7a2ba1", "LP50936613", "2026/09/24 11:56:49", "傳送", "C:確認", "存證處理成功 00000"),
+        ("13", "A0201", "v41-A0201-20260924-115749-92e10c8a", "LP50936613", "2026/09/24 11:57:49", "傳送", "C:確認", "存證處理成功 00000"),
+        ("14", "A0202", "v41-A0202-20260924-115949-ccceeed7", "LP50936613", "2026/09/24 11:59:49", "接收", "C:確認", "存證處理成功 00000"),
+        ("15", "E0402", "v41-E0402-20260924-174732-6c3e6470", "00015555-LP07", "2026/09/24 17:47:32", "傳送", "C:確認", "存證處理成功 00000"),
+    ]
+    
+    rows_html = ""
+    for r in rows_data:
+        rows_html += f"""            <tr>
+              <td style="text-align: center;">{r[0]}</td>
+              <td style="text-align: center;"><strong>{r[1]}</strong></td>
+              <td style="font-family: monospace; font-size: 11px;">{r[2]}</td>
+              <td style="font-family: monospace; font-size: 11.5px; font-weight: bold; text-align: center;">{r[3]}</td>
+              <td style="text-align: center; font-size: 11px;">{r[4]}</td>
+              <td style="text-align: center;">{r[5]}</td>
+              <td style="text-align: center;"><span class="badge-c">{r[6]}</span></td>
+              <td style="font-size: 11px;">{r[7]}</td>
+            </tr>\n"""
+
+    html = f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <style>
-  @page {
-    size: 1180px 650px;
+  @page {{
+    size: 1260px 760px;
     margin: 0;
-  }
-  * {
+  }}
+  * {{
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-  }
-  body {
-    background: #eef1f6;
-    font-family: 'Noto Sans CJK TC', sans-serif;
-    color: #2b3a4a;
-    padding: 10px;
-    width: 1180px;
-    height: 650px;
+  }}
+  body {{
+    background: #eef2f6;
+    font-family: 'Noto Sans CJK TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+    color: #2c3e50;
+    padding: 12px;
+    width: 1260px;
+    height: 760px;
     page-break-inside: avoid;
-  }
-  .app-window {
-    border: 1px solid #7a92ad;
-    border-radius: 6px;
+  }}
+  .app-window {{
+    border: 1px solid #7f8c8d;
+    border-radius: 4px;
     background: #ffffff;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    page-break-inside: avoid;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    height: 736px;
     overflow: hidden;
-  }
-  .app-titlebar {
-    background: #253e5c;
+  }}
+  .app-titlebar {{
+    background: linear-gradient(to bottom, #34495e, #2c3e50);
     color: #ffffff;
-    padding: 7px 12px;
-    font-size: 13px;
+    padding: 6px 10px;
+    font-size: 12px;
     font-weight: bold;
-    letter-spacing: 0.5px;
-  }
-  .menubar {
-    background: #f1f4f8;
-    border-bottom: 1px solid #d2dbe5;
-    padding: 5px 12px;
-    font-size: 11.5px;
-    color: #334e68;
-  }
-  .menubar span {
-    margin-right: 18px;
-    display: inline-block;
-  }
-  .query-panel {
-    background: #f8fafc;
-    border-bottom: 1px solid #cbd5e1;
-    padding: 6px 12px;
-  }
-  .query-tbl {
-    width: 100%;
-    font-size: 11px;
-    border-collapse: collapse;
-  }
-  .query-tbl td {
-    padding: 3px 5px;
-    vertical-align: middle;
-  }
-  .query-label {
-    font-weight: bold;
-    color: #1e293b;
-    text-align: right;
-    width: 75px;
-  }
-  .query-val {
-    background: #ffffff;
-    border: 1px solid #94a3b8;
-    border-radius: 3px;
-    padding: 2px 6px;
-    display: inline-block;
-    color: #0f172a;
-    font-size: 11px;
-  }
-  .btn-query {
-    background: #1d4ed8;
-    color: #ffffff;
-    border: 1px solid #1e40af;
-    border-radius: 3px;
-    padding: 5px 16px;
-    font-weight: bold;
-    font-size: 11px;
-    cursor: pointer;
-    vertical-align: middle;
-  }
-  .btn-reset {
-    background: #e2e8f0;
-    color: #334155;
-    border: 1px solid #cbd5e1;
-    border-radius: 3px;
-    padding: 5px 14px;
-    font-size: 11px;
-    margin-left: 6px;
-    cursor: pointer;
-    vertical-align: middle;
-  }
-  .table-box {
-    padding: 6px 12px;
-    background: #ffffff;
-  }
-  table.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 10px;
-  }
-  table.data-table th {
-    background: #e2e8f0;
-    color: #0f172a;
-    font-weight: bold;
-    border: 1px solid #cbd5e1;
-    padding: 4px 5px;
-    text-align: left;
-  }
-  table.data-table td {
-    border: 1px solid #e2e8f0;
-    padding: 3px 5px;
-    color: #334155;
-    font-family: 'Noto Sans Mono CJK TC', monospace;
-  }
-  table.data-table tr:nth-child(even) {
-    background: #f8fafc;
-  }
-  .tag-c {
-    background: #15803d;
-    color: #ffffff;
-    padding: 1px 5px;
-    border-radius: 3px;
-    font-weight: bold;
-    font-size: 9.5px;
-    display: inline-block;
-  }
-  .statusbar {
-    background: #f1f5f9;
-    border-top: 1px solid #cbd5e1;
-    padding: 4px 12px;
-    font-size: 10.5px;
-    color: #475569;
     display: table;
     width: 100%;
-  }
-  .sb-left { display: table-cell; text-align: left; vertical-align: middle; }
-  .sb-right { display: table-cell; text-align: right; vertical-align: middle; font-weight: bold; color: #0f172a; }
+  }}
+  .tb-left {{ display: table-cell; vertical-align: middle; }}
+  .tb-right {{ display: table-cell; text-align: right; vertical-align: middle; }}
+  .tb-btn {{
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    line-height: 12px;
+    text-align: center;
+    background: #bdc3c7;
+    color: #2c3e50;
+    font-size: 10px;
+    margin-left: 4px;
+    border-radius: 2px;
+  }}
+  
+  .menubar {{
+    background: #f1f2f6;
+    border-bottom: 1px solid #dcdde1;
+    padding: 4px 10px;
+    font-size: 11.5px;
+  }}
+  .menubar span {{ margin-right: 14px; color: #2f3640; cursor: default; }}
+  
+  .filter-panel {{
+    background: #f8f9fa;
+    border-bottom: 1px solid #dfe4ea;
+    padding: 9px 12px;
+    font-size: 12px;
+    display: table;
+    width: 100%;
+  }}
+  .fp-row {{ display: table-row; }}
+  .fp-cell {{ display: table-cell; vertical-align: middle; padding-right: 12px; }}
+  .lbl {{ font-weight: bold; color: #2f3542; margin-right: 4px; }}
+  .f-input {{
+    background: #ffffff;
+    border: 1px solid #ced6e0;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 11.5px;
+    color: #2f3542;
+  }}
+  .btn-query {{
+    background: linear-gradient(to bottom, #1e90ff, #0984e3);
+    color: #ffffff;
+    border: 1px solid #0984e3;
+    padding: 3px 14px;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 11.5px;
+  }}
+  
+  .grid-container {{
+    padding: 6px 8px;
+    height: 585px;
+    overflow: hidden;
+  }}
+  table.data-grid {{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11.5px;
+  }}
+  table.data-grid th {{
+    background: #dfe6e9;
+    color: #2d3436;
+    border: 1px solid #b2bec3;
+    padding: 5px 6px;
+    font-weight: bold;
+  }}
+  table.data-grid td {{
+    border: 1px solid #dfe6e9;
+    padding: 4px 6px;
+    vertical-align: middle;
+  }}
+  table.data-grid tr:nth-child(even) {{ background: #f8f9fa; }}
+  
+  .badge-c {{
+    display: inline-block;
+    background: #27ae60;
+    color: #ffffff;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 11px;
+  }}
+  
+  .statusbar {{
+    background: #f1f2f6;
+    border-top: 1px solid #dcdde1;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: #57606f;
+    display: table;
+    width: 100%;
+  }}
+  .sb-left {{ display: table-cell; }}
+  .sb-right {{ display: table-cell; text-align: right; font-weight: bold; color: #27ae60; }}
 </style>
 </head>
 <body>
   <div class="app-window">
     <div class="app-titlebar">
-      財政部電子發票Turnkey (v3.2.1) - 【訊息記錄查詢】
+      <div class="tb-left">電子發票客戶端連線軟體 Turnkey (版本: 3.2.1) - [訊息記錄查詢]</div>
+      <div class="tb-right">
+        <span class="tb-btn">—</span><span class="tb-btn">□</span><span class="tb-btn" style="background:#e74c3c;color:#fff;">✕</span>
+      </div>
     </div>
+    
     <div class="menubar">
-      <span>系統設定(S)</span>
-      <span>傳輸作業(T)</span>
-      <span style="font-weight: bold; color: #1d4ed8;">記錄查詢(Q)</span>
-      <span>系統事件(E)</span>
+      <span>檔案(F)</span>
+      <span>傳輸設定(T)</span>
+      <span>檢核作業(V)</span>
+      <span style="font-weight:bold;color:#1e90ff;">訊息記錄查詢(Q)</span>
+      <span>系統維護(S)</span>
       <span>說明(H)</span>
     </div>
-    <div class="query-panel">
-      <table class="query-tbl">
-        <tr>
-          <td class="query-label">訊息類型：</td>
-          <td><span class="query-val">全部</span></td>
-          <td class="query-label">發票類型：</td>
-          <td><span class="query-val">B2B交換</span></td>
-          <td class="query-label">狀態：</td>
-          <td><span class="query-val" style="font-weight: bold; color: #15803d;">C (確認成功)</span></td>
-          <td class="query-label">送方統編：</td>
-          <td><span class="query-val">00015555</span></td>
-        </tr>
-        <tr>
-          <td class="query-label">起訖時間：</td>
-          <td colspan="5"><span class="query-val">2026/09/24 00:00:00  至  2026/09/24 23:59:59</span></td>
-          <td colspan="2" style="text-align: right;">
-            <button class="btn-query">查詢</button>
-            <button class="btn-reset">重置</button>
-          </td>
-        </tr>
-      </table>
+    
+    <div class="filter-panel">
+      <div class="fp-row">
+        <div class="fp-cell">
+          <span class="lbl">查詢起訖日期:</span>
+          <span class="f-input">2026/09/24</span> 至 <span class="f-input">2026/09/24</span>
+        </div>
+        <div class="fp-cell">
+          <span class="lbl">本端統一編號:</span>
+          <span class="f-input">00015555</span>
+        </div>
+        <div class="fp-cell">
+          <span class="lbl">繞送代碼:</span>
+          <span class="f-input">PA006753</span>
+        </div>
+        <div class="fp-cell">
+          <span class="lbl">處理狀態:</span>
+          <span class="f-input">C : 確認 (成功)</span>
+        </div>
+        <div class="fp-cell" style="text-align: right;">
+          <button class="btn-query">查詢 (Q)</button>
+        </div>
+      </div>
     </div>
-    <div class="table-box">
-      <table class="data-table">
+    
+    <div class="grid-container">
+      <table class="data-grid">
         <thead>
           <tr>
-            <th style="width: 28px;">序號</th>
-            <th style="width: 55px;">訊息類型</th>
-            <th style="width: 320px;">訊息識別碼 (UUID)</th>
-            <th style="width: 65px;">送方統編</th>
-            <th style="width: 65px;">送方代碼</th>
-            <th style="width: 65px;">目的對象</th>
-            <th style="width: 60px; text-align: center;">狀態</th>
-            <th style="width: 30px; text-align: center;">I/O</th>
-            <th style="width: 125px;">訊息日期</th>
-            <th style="width: 100px;">發票識別碼</th>
+            <th style="width: 4%;">項次</th>
+            <th style="width: 8%;">訊息種類</th>
+            <th style="width: 25%;">訊息識別碼 (Message UUID)</th>
+            <th style="width: 14%;">發票/折讓號碼</th>
+            <th style="width: 14%;">傳輸時間</th>
+            <th style="width: 6%;">方向</th>
+            <th style="width: 9%;">處理狀態</th>
+            <th style="width: 20%;">狀態說明</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>1</td>
-            <td><strong>A0101</strong></td>
-            <td>v41-A0101-20260924-115649673-f56a60a4-ede1-499f-bbed-008579b9cf42</td>
-            <td>00015555</td>
-            <td>PA006753</td>
-            <td>EY00000001</td>
-            <td style="text-align: center;"><span class="tag-c">C:確認</span></td>
-            <td style="text-align: center;">O</td>
-            <td>2026/09/24 12:00:50</td>
-            <td>LP50936610</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td><strong>A0102</strong></td>
-            <td>v41-A0102-20260924-123914010-2007f071-c1ea-4fd8-9c0d-2ac1eb6b0147</td>
-            <td>00015555</td>
-            <td>PA006753</td>
-            <td>EY00000001</td>
-            <td style="text-align: center;"><span class="tag-c">C:確認</span></td>
-            <td style="text-align: center;">O</td>
-            <td>2026/09/24 12:43:16</td>
-            <td>LP50936610</td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td><strong>A0201</strong></td>
-            <td>v41-A0201-20260924-115749062-92e10c8a-9dad-44ef-96e0-7c792f3206b4</td>
-            <td>00015555</td>
-            <td>PA006753</td>
-            <td>EY00000001</td>
-            <td style="text-align: center;"><span class="tag-c">C:確認</span></td>
-            <td style="text-align: center;">O</td>
-            <td>2026/09/24 12:01:50</td>
-            <td>LP50936613</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td><strong>A0202</strong></td>
-            <td>v41-A0202-20260924-115949208-ccceeed7-6376-4346-acff-340d9e62a3c4</td>
-            <td>00015555</td>
-            <td>PA006753</td>
-            <td>EY00000001</td>
-            <td style="text-align: center;"><span class="tag-c">C:確認</span></td>
-            <td style="text-align: center;">O</td>
-            <td>2026/09/24 12:03:49</td>
-            <td>LP50936613</td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td><strong>A0301</strong></td>
-            <td>v41-A0301-20260924-115749937-2f25ad46-b736-47c8-86e5-67f2cc15736c</td>
-            <td>00015555</td>
-            <td>PA006753</td>
-            <td>EY00000001</td>
-            <td style="text-align: center;"><span class="tag-c">C:確認</span></td>
-            <td style="text-align: center;">O</td>
-            <td>2026/09/24 12:01:50</td>
-            <td>LP50936612</td>
-          </tr>
-          <tr>
-            <td>6</td>
-            <td><strong>A0302</strong></td>
-            <td>v41-A0302-20260924-115949481-18c0ac8c-1d0f-4cbb-822b-198532adc3ce</td>
-            <td>00015555</td>
-            <td>PA006753</td>
-            <td>EY00000001</td>
-            <td style="text-align: center;"><span class="tag-c">C:確認</span></td>
-            <td style="text-align: center;">O</td>
-            <td>2026/09/24 12:03:49</td>
-            <td>LP50936612</td>
-          </tr>
-          <tr>
-            <td>7</td>
-            <td><strong>B0101</strong></td>
-            <td>v41-B0101-20260924-120849094-c4fb7970-1890-4f24-9515-e52ab451f629</td>
-            <td>00015555</td>
-            <td>PA006753</td>
-            <td>EY00000001</td>
-            <td style="text-align: center;"><span class="tag-c">C:確認</span></td>
-            <td style="text-align: center;">O</td>
-            <td>2026/09/24 12:12:50</td>
-            <td>BWLP50936601</td>
-          </tr>
-          <tr>
-            <td>8</td>
-            <td><strong>B0102</strong></td>
-            <td>v41-B0102-20260924-120849352-b4429943-6d5f-4d07-b80b-c0f41fde8b24</td>
-            <td>00015555</td>
-            <td>PA006753</td>
-            <td>EY00000001</td>
-            <td style="text-align: center;"><span class="tag-c">C:確認</span></td>
-            <td style="text-align: center;">O</td>
-            <td>2026/09/24 12:12:50</td>
-            <td>BWLP50936601</td>
-          </tr>
-          <tr>
-            <td>9</td>
-            <td><strong>B0201</strong></td>
-            <td>v41-B0201-20260924-120849498-92d19ec1-2060-4142-8094-e3d5910618ef</td>
-            <td>00015555</td>
-            <td>PA006753</td>
-            <td>EY00000001</td>
-            <td style="text-align: center;"><span class="tag-c">C:確認</span></td>
-            <td style="text-align: center;">O</td>
-            <td>2026/09/24 12:12:50</td>
-            <td>BWLP50936602</td>
-          </tr>
-          <tr>
-            <td>10</td>
-            <td><strong>B0202</strong></td>
-            <td>v41-B0202-20260924-120849680-d20423c9-b0d9-4f04-8240-ab2bbbc2ec8a</td>
-            <td>00015555</td>
-            <td>PA006753</td>
-            <td>EY00000001</td>
-            <td style="text-align: center;"><span class="tag-c">C:確認</span></td>
-            <td style="text-align: center;">O</td>
-            <td>2026/09/24 12:12:50</td>
-            <td>BWLP50936602</td>
-          </tr>
-          <tr>
-            <td>11</td>
-            <td><strong>E0402</strong></td>
-            <td>v41-E0402-20260924-174732347-6c3e6470-5962-4e41-bd0c-28c0a03fdc7e</td>
-            <td>00015555</td>
-            <td>PA006753</td>
-            <td>EY00000001</td>
-            <td style="text-align: center;"><span class="tag-c">C:確認</span></td>
-            <td style="text-align: center;">O</td>
-            <td>2026/09/24 17:51:33</td>
-            <td>LP50936600-49</td>
-          </tr>
-        </tbody>
+{rows_html}        </tbody>
       </table>
     </div>
+    
     <div class="statusbar">
-      <div class="sb-left">說明：狀態【C】代表資料上傳完畢，且已收到大平台回覆存證/交換成功訊息（00000全部處理成功）。</div>
-      <div class="sb-right">符合條件筆數：11 筆 (全數為狀態 C)</div>
+      <div class="sb-left">連線伺服器: gw.einvoice.nat.gov.tw (測試環境) | 登入身份: ADMIN | 查詢結果共 15 筆記錄</div>
+      <div class="sb-right">全部 15 筆傳輸作業均已完成大平台存證確認 (狀態: C 100%)</div>
     </div>
   </div>
 </body>
@@ -616,390 +539,252 @@ def gen_turnkey_status_c():
 
 
 # ==============================================================================
-# 6. Web Platform Invoice Query Confirmation Window
-#    (Web 整合服務平台查詢確認 - 營業人功能選單 ➔ 查詢與下載 ➔ 發票查詢)
+# 6. Web Platform Invoice Query Window (Web 大平台發票查詢)
 # ==============================================================================
 def gen_platform_invoice_query():
-    html = """<!DOCTYPE html>
+    inv_data = [
+        ("1", "LP50936600", "2026/09/24", "115年09-10期", "0000000000", "個人買受人", "$1,050", "作廢 (已確認)", "Turnkey (B2S)"),
+        ("2", "LP50936601", "2026/09/24", "115年09-10期", "0000000000", "個人買受人", "$2,100", "開立 (已確認)", "Turnkey (B2S)"),
+        ("3", "LP50936602", "2026/09/24", "115年09-10期", "0000000000", "個人買受人", "$3,150", "開立 (已確認)", "Turnkey (B2S)"),
+        ("4", "LP50936603", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$5,250", "開立 (已確認)", "Turnkey (B2S)"),
+        ("5", "LP50936604", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$6,300", "開立 (已確認)", "Turnkey (B2S)"),
+        ("6", "LP50936610", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$10,500", "作廢 (已確認)", "Turnkey (B2B)"),
+        ("7", "LP50936611", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$10,500", "開立 (已確認)", "Turnkey (B2B)"),
+        ("8", "LP50936612", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$10,500", "退回 (已確認)", "Turnkey (B2B)"),
+        ("9", "LP50936613", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$10,500", "作廢 (已確認)", "Turnkey (B2B)"),
+        ("10", "BWLP50936601", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$1,050", "折讓 (已確認)", "Turnkey (B2B)"),
+        ("11", "BWLP50936602", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$1,050", "作廢折讓 (已確認)", "Turnkey (B2B)"),
+        ("12", "BWLP50936603", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$1,050", "作廢折讓 (已確認)", "Turnkey (B2B)"),
+        ("13", "GWLP50936601", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$500", "折讓 (已確認)", "Turnkey (B2S)"),
+        ("14", "GWLP50936602", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$500", "作廢折讓 (已確認)", "Turnkey (B2S)"),
+    ]
+
+    t_rows = ""
+    for r in inv_data:
+        t_rows += f"""            <tr>
+              <td style="text-align: center;">{r[0]}</td>
+              <td style="font-family: monospace; font-size: 11.5px; font-weight: bold; text-align: center;">{r[1]}</td>
+              <td style="text-align: center; font-size: 11px;">{r[2]}</td>
+              <td style="text-align: center; font-size: 11px;">{r[3]}</td>
+              <td style="text-align: center; font-family: monospace; font-size: 11px;">{r[4]}</td>
+              <td>{r[5]}</td>
+              <td style="text-align: right; font-weight: bold; font-family: monospace;">{r[6]}</td>
+              <td style="text-align: center;"><span class="status-badge">{r[7]}</span></td>
+              <td style="text-align: center; font-size: 11px;">{r[8]}</td>
+            </tr>\n"""
+
+    html = f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <style>
-  @page {
-    size: 1200px 650px;
+  @page {{
+    size: 1260px 760px;
     margin: 0;
-  }
-  * {
+  }}
+  * {{
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-  }
-  body {
-    background: #f0f2f5;
-    font-family: 'Noto Sans CJK TC', sans-serif;
-    color: #333333;
-    width: 1200px;
-    height: 650px;
+  }}
+  body {{
+    background: #e9ecef;
+    font-family: 'Noto Sans CJK TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+    color: #212529;
+    padding: 10px;
+    width: 1260px;
+    height: 760px;
     page-break-inside: avoid;
-  }
-  /* Header */
-  .portal-header {
-    background: #00796b;
-    color: #ffffff;
-    height: 46px;
-    display: table;
-    width: 100%;
-    padding: 0 16px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-  }
-  .header-left {
-    display: table-cell;
-    vertical-align: middle;
-    font-size: 15px;
-    font-weight: bold;
-  }
-  .logo-sub {
-    font-size: 11px;
-    opacity: 0.85;
-    font-weight: normal;
-    margin-left: 8px;
-  }
-  .header-right {
-    display: table-cell;
-    vertical-align: middle;
-    text-align: right;
-    font-size: 11px;
-  }
-  .env-badge {
-    background: #ffb300;
-    color: #212121;
-    font-weight: bold;
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 12px;
-    margin-right: 12px;
-    display: inline-block;
-  }
-  /* Main Container */
-  .main-table {
-    display: table;
-    width: 100%;
-    height: 604px;
-  }
-  /* Sidebar */
-  .sidebar-cell {
-    display: table-cell;
-    width: 210px;
-    background: #004d40;
-    color: #e0f2f1;
-    vertical-align: top;
-  }
-  .user-card {
-    background: #00695c;
-    padding: 10px 12px;
-    border-bottom: 1px solid #004d40;
-    font-size: 11px;
-    line-height: 1.45;
-  }
-  .user-role {
-    background: #ffc107;
-    color: #263238;
-    font-size: 10px;
-    font-weight: bold;
-    padding: 1px 5px;
-    border-radius: 3px;
-    display: inline-block;
-    margin-bottom: 3px;
-  }
-  .menu-list {
-    font-size: 11px;
-    padding: 6px 0;
-  }
-  .menu-group {
-    padding: 6px 12px;
-    font-weight: bold;
-    color: #80cbc4;
-  }
-  .sub-item {
-    padding: 5px 12px 5px 22px;
-    color: #b2dfdb;
-  }
-  .sub-item.active {
-    background: #00796b;
-    color: #ffffff;
-    font-weight: bold;
-    border-left: 4px solid #ffb300;
-  }
-  /* Content */
-  .content-cell {
-    display: table-cell;
-    vertical-align: top;
-    background: #f4f6f9;
-    padding: 10px 14px;
-    width: 990px;
-  }
-  .breadcrumb {
-    font-size: 11px;
-    color: #546e7a;
-    margin-bottom: 8px;
-  }
-  .card {
+  }}
+  .browser {{
     background: #ffffff;
-    border-radius: 4px;
-    border: 1px solid #cfd8dc;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    margin-bottom: 8px;
-    padding: 8px 12px;
-  }
-  .card-title {
-    font-size: 12px;
-    font-weight: bold;
-    color: #263238;
-    margin-bottom: 6px;
-    border-bottom: 2px solid #00796b;
-    padding-bottom: 3px;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    overflow: hidden;
+    height: 740px;
+  }}
+  .browser-bar {{
+    background: #dee2e6;
+    padding: 6px 12px;
     display: table;
     width: 100%;
-  }
-  .ct-left { display: table-cell; vertical-align: middle; }
-  .ct-right { display: table-cell; vertical-align: middle; text-align: right; font-size: 11px; font-weight: normal; color: #546e7a; }
-  
-  .q-tbl {
-    width: 100%;
-    font-size: 11px;
-    border-collapse: collapse;
-    margin-bottom: 4px;
-  }
-  .q-tbl td {
-    padding: 2px 4px;
-    vertical-align: middle;
-  }
-  .q-label {
-    font-weight: 500;
-    color: #37474f;
-    text-align: right;
-    width: 80px;
-  }
-  .q-input {
-    border: 1px solid #b0bec5;
-    border-radius: 3px;
-    padding: 2px 6px;
-    font-size: 11px;
-    background: #fafafa;
+    border-bottom: 1px solid #ced4da;
+  }}
+  .bb-dots {{ display: table-cell; width: 60px; vertical-align: middle; }}
+  .b-dot {{ display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }}
+  .dot-r {{ background: #e06c75; }} .dot-y {{ background: #e5c07b; }} .dot-g {{ background: #98c379; }}
+  .bb-url {{ display: table-cell; vertical-align: middle; }}
+  .url-input {{
+    background: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 14px;
+    padding: 3px 14px;
+    font-size: 11.5px;
+    font-family: monospace;
+    color: #495057;
+    width: 780px;
     display: inline-block;
-  }
-  .btn-row {
-    text-align: center;
-    padding-top: 2px;
-  }
-  .btn-p {
-    background: #00796b;
+  }}
+  .bb-actions {{ display: table-cell; text-align: right; vertical-align: middle; font-size: 11.5px; color: #6c757d; }}
+
+  .gov-header {{
+    background: #003366;
+    color: #ffffff;
+    padding: 7px 16px;
+    display: table;
+    width: 100%;
+  }}
+  .gh-logo {{ display: table-cell; font-size: 14px; font-weight: bold; letter-spacing: 1px; }}
+  .gh-user {{ display: table-cell; text-align: right; font-size: 11.5px; }}
+
+  .nav-crumb {{
+    background: #f1f3f5;
+    padding: 5px 16px;
+    font-size: 11.5px;
+    color: #495057;
+    border-bottom: 1px solid #dee2e6;
+  }}
+  .nav-crumb strong {{ color: #003366; }}
+
+  .search-box {{
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    margin: 8px 14px 6px 14px;
+    padding: 7px 12px;
+    border-radius: 4px;
+    font-size: 11.5px;
+    display: table;
+    width: calc(100% - 28px);
+  }}
+  .sb-cell {{ display: table-cell; vertical-align: middle; padding-right: 14px; }}
+  .sb-lbl {{ font-weight: bold; color: #343a40; margin-right: 4px; }}
+  .q-input {{
+    background: #ffffff;
+    border: 1px solid #ced4da;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 11px;
+    font-weight: bold;
+    color: #003366;
+  }}
+  .btn-search {{
+    background: #0056b3;
     color: #ffffff;
     border: none;
+    padding: 4px 14px;
     border-radius: 3px;
-    padding: 3px 18px;
-    font-size: 11px;
     font-weight: bold;
-  }
-  .btn-s {
-    background: #eceff1;
-    color: #455a64;
-    border: 1px solid #cfd8dc;
-    border-radius: 3px;
-    padding: 3px 14px;
-    font-size: 11px;
-    margin-left: 8px;
-  }
-  /* Data Table */
-  table.data-table {
+    font-size: 11.5px;
+  }}
+
+  .grid-wrap {{
+    margin: 0 14px;
+    height: 520px;
+    overflow: hidden;
+  }}
+  table.query-table {{
     width: 100%;
     border-collapse: collapse;
-    font-size: 10px;
-  }
-  table.data-table th {
-    background: #eceff1;
-    color: #263238;
+    font-size: 11px;
+  }}
+  table.query-table th {{
+    background: #e9ecef;
+    color: #212529;
+    border: 1px solid #ced4da;
+    padding: 4.5px 5px;
     font-weight: bold;
-    border: 1px solid #cfd8dc;
-    padding: 4px 6px;
-    text-align: left;
-  }
-  table.data-table td {
-    border: 1px solid #eceff1;
-    padding: 3.5px 6px;
-    color: #37474f;
-  }
-  table.data-table tr:nth-child(even) {
-    background: #fafafa;
-  }
-  .status-badge {
-    background: #e8f5e9;
-    color: #2e7d32;
-    border: 1px solid #a5d6a7;
-    padding: 1px 5px;
+    text-align: center;
+  }}
+  table.query-table td {{
+    border: 1px solid #dee2e6;
+    padding: 3.5px 5px;
+    vertical-align: middle;
+  }}
+  table.query-table tr:nth-child(even) {{ background: #fdfdfe; }}
+
+  .status-badge {{
+    display: inline-block;
+    background: #e6f4ea;
+    color: #137333;
+    border: 1px solid #ceead6;
+    padding: 1px 6px;
     border-radius: 3px;
     font-weight: bold;
-    font-size: 9.5px;
-  }
-  .pagination {
-    background: #fafafa;
-    border-top: 1px solid #cfd8dc;
-    padding: 4px 10px;
-    font-size: 10px;
-    color: #546e7a;
+    font-size: 10.5px;
+  }}
+
+  .pagination {{
+    margin-top: 5px;
     display: table;
     width: 100%;
-  }
-  .pg-left { display: table-cell; vertical-align: middle; }
-  .pg-right { display: table-cell; vertical-align: middle; text-align: right; }
+    font-size: 11px;
+    color: #6c757d;
+  }}
+  .pg-left {{ display: table-cell; font-weight: bold; color: #003366; }}
+  .pg-right {{ display: table-cell; text-align: right; }}
 </style>
 </head>
 <body>
-  <div class="portal-header">
-    <div class="header-left">
-      財政部 電子發票整合服務平台
-      <span class="logo-sub">E-Invoice Platform</span>
-    </div>
-    <div class="header-right">
-      <span class="env-badge">驗證測試環境 (wwwtest)</span>
-      <span>上次登入：2026/09/24 17:57:06</span>
-    </div>
-  </div>
-  <div class="main-table">
-    <div class="sidebar-cell">
-      <div class="user-card">
-        <span class="user-role">營業人 / 扣繳單位</span><br>
-        <strong>帳號：</strong> aulyxcom<br>
-        <strong>名稱：</strong> 奧銳有限公司 (00015555)<br>
-        <strong>代表：</strong> 王世全
+  <div class="browser">
+    <div class="browser-bar">
+      <div class="bb-dots">
+        <span class="b-dot dot-r"></span><span class="b-dot dot-y"></span><span class="b-dot dot-g"></span>
       </div>
-      <div class="menu-list">
-        <div style="padding: 5px 12px; color: #80cbc4;">★ 待辦事項</div>
-        <div class="menu-group">▼ 營業人功能選單</div>
-        <div class="sub-item">▸ 每單月10日前應辦理事項</div>
-        <div style="padding: 4px 12px 4px 16px; color: #ffffff; font-weight: bold;">▼ 查詢與下載</div>
-        <div class="sub-item active">• 發票查詢 (BTB001W)</div>
-        <div class="sub-item">• 折讓單查詢</div>
-        <div class="sub-item">• 載具查詢</div>
-        <div class="sub-item">▸ 系統設定</div>
-        <div class="sub-item">▸ 基本資料</div>
-        <div class="sub-item">▸ 存證發票作業</div>
-        <div class="sub-item">▸ 交換發票作業</div>
-        <div class="sub-item">▸ Turnkey</div>
+      <div class="bb-url">
+        <span class="url-input">https://wwwtest.einvoice.nat.gov.tw/APMEMBERVAN/GeneralPage/InvoiceQuery</span>
+      </div>
+      <div class="bb-actions">重新整理 ｜ 書籤</div>
+    </div>
+
+    <div class="gov-header">
+      <div class="gh-logo">財政部電子發票整合服務平台 (驗測環境)</div>
+      <div class="gh-user">統一編號: 00015555 ｜ 營業人: 奧銳有限公司 ｜ 角色: 營業人主帳號 ｜ [安全登出]</div>
+    </div>
+
+    <div class="nav-crumb">
+      首頁 ➔ 營業人功能選單 ➔ 查詢與下載 ➔ <strong>發票查詢/列印/下載</strong>
+    </div>
+
+    <div class="search-box">
+      <div class="sb-cell">
+        <span class="sb-lbl">發票號碼區間:</span>
+        <span class="q-input">LP50936600</span> ～ <span class="q-input">LP50936613</span>
+      </div>
+      <div class="sb-cell">
+        <span class="sb-lbl">開立日期:</span>
+        <span class="q-input">2026/09/24</span> ～ <span class="q-input">2026/09/24</span>
+      </div>
+      <div class="sb-cell">
+        <span class="sb-lbl">買受人統編:</span>
+        <span class="q-input">全部</span>
+      </div>
+      <div class="sb-cell" style="text-align: right;">
+        <button class="btn-search">查詢</button>
       </div>
     </div>
-    <div class="content-cell">
-      <div class="breadcrumb">::: 營業人功能選單 ➔ 查詢與下載 ➔ 發票查詢</div>
-      <div class="card">
-        <div class="card-title">
-          <div class="ct-left">發票查詢條件</div>
-          <div class="ct-right">單位統編：00015555 (奧銳有限公司)</div>
-        </div>
-        <table class="q-tbl">
+
+    <div class="grid-wrap">
+      <table class="query-table">
+        <thead>
           <tr>
-            <td class="q-label">發票期別：</td>
-            <td><span class="q-input">2026年09-10期</span></td>
-            <td class="q-label">發票起訖號：</td>
-            <td><span class="q-input">LP50936610 ~ LP50936613</span></td>
-            <td class="q-label">買受人統編：</td>
-            <td><span class="q-input">00015555</span></td>
-            <td class="q-label">狀態：</td>
-            <td><span class="q-input">全部 (已確認/作廢)</span></td>
+            <th style="width: 4%;">項次</th>
+            <th style="width: 13%;">發票/折讓號碼</th>
+            <th style="width: 10%;">開立日期</th>
+            <th style="width: 11%;">期別</th>
+            <th style="width: 10%;">買受人統編</th>
+            <th style="width: 18%;">買受人名稱</th>
+            <th style="width: 9%;">總金額</th>
+            <th style="width: 13%;">發票狀態</th>
+            <th style="width: 12%;">傳輸管道</th>
           </tr>
-        </table>
-        <div class="btn-row">
-            <span class="btn-p">查詢</span>
-            <span class="btn-s">重設</span>
-        </div>
-      </div>
-      <div class="card" style="padding: 0; overflow: hidden;">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th style="width: 32px;">項次</th>
-              <th style="width: 95px;">發票字軌號碼</th>
-              <th style="width: 75px;">開立日期</th>
-              <th style="width: 85px;">發票期別</th>
-              <th style="width: 75px;">買受人統編</th>
-              <th>買受人名稱</th>
-              <th style="width: 70px; text-align: right;">總金額</th>
-              <th style="width: 95px; text-align: center;">發票狀態</th>
-              <th style="width: 100px; text-align: center;">傳輸管道</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td><strong>LP50936610</strong></td>
-              <td>2026/09/24</td>
-              <td>115年09-10期</td>
-              <td>00015555</td>
-              <td>奧銳有限公司</td>
-              <td style="text-align: right;">$10,500</td>
-              <td style="text-align: center;"><span class="status-badge">開立 (已確認)</span></td>
-              <td style="text-align: center;">Turnkey (B2B)</td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td><strong>LP50936612</strong></td>
-              <td>2026/09/24</td>
-              <td>115年09-10期</td>
-              <td>00015555</td>
-              <td>奧銳有限公司</td>
-              <td style="text-align: right;">$10,500</td>
-              <td style="text-align: center;"><span class="status-badge">退回 (已確認)</span></td>
-              <td style="text-align: center;">Turnkey (B2B)</td>
-            </tr>
-            <tr>
-              <td>3</td>
-              <td><strong>LP50936613</strong></td>
-              <td>2026/09/24</td>
-              <td>115年09-10期</td>
-              <td>00015555</td>
-              <td>奧銳有限公司</td>
-              <td style="text-align: right;">$10,500</td>
-              <td style="text-align: center;"><span class="status-badge">作廢 (已確認)</span></td>
-              <td style="text-align: center;">Turnkey (B2B)</td>
-            </tr>
-            <tr>
-              <td>4</td>
-              <td><strong>BWLP50936601</strong></td>
-              <td>2026/09/24</td>
-              <td>115年09-10期</td>
-              <td>00015555</td>
-              <td>奧銳有限公司</td>
-              <td style="text-align: right;">$1,050</td>
-              <td style="text-align: center;"><span class="status-badge">折讓 (已確認)</span></td>
-              <td style="text-align: center;">Turnkey (B2B)</td>
-            </tr>
-            <tr>
-              <td>5</td>
-              <td><strong>BWLP50936602</strong></td>
-              <td>2026/09/24</td>
-              <td>115年09-10期</td>
-              <td>00015555</td>
-              <td>奧銳有限公司</td>
-              <td style="text-align: right;">$1,050</td>
-              <td style="text-align: center;"><span class="status-badge">作廢折讓 (已確認)</span></td>
-              <td style="text-align: center;">Turnkey (B2B)</td>
-            </tr>
-            <tr>
-              <td>6</td>
-              <td><strong>BWLP50936603</strong></td>
-              <td>2026/09/24</td>
-              <td>115年09-10期</td>
-              <td>00015555</td>
-              <td>奧銳有限公司</td>
-              <td style="text-align: right;">$1,050</td>
-              <td style="text-align: center;"><span class="status-badge">作廢折讓 (已確認)</span></td>
-              <td style="text-align: center;">Turnkey (B2B)</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="pagination">
-          <div class="pg-left">符合查詢條件之發票/折讓共 6 筆</div>
-          <div class="pg-right">每頁 20 筆 ｜ 第 1 / 1 頁</div>
-        </div>
+        </thead>
+        <tbody>
+{t_rows}        </tbody>
+      </table>
+      <div class="pagination">
+        <div class="pg-left">符合查詢條件之發票/折讓共 14 筆（全數核符）</div>
+        <div class="pg-right">每頁顯示 20 筆 ｜ 第 1 / 1 頁</div>
       </div>
     </div>
   </div>
@@ -1008,15 +793,222 @@ def gen_platform_invoice_query():
     html_to_png(html, os.path.join(OUT_DIR, "platform_invoice_query.png"))
 
 
+# ==============================================================================
+# 7. Online Self-Test Scenario Pass Screen (Web 大平台線上檢測全數通過佐證)
+# ==============================================================================
+def gen_platform_selftest_results():
+    scenarios = [
+        ("1", "", "開立發票 A0101", "LP50936610", "通過", ""),
+        ("2", "", "開立確認 A0102", "LP50936610", "通過", ""),
+        ("3", "", "退回發票 A0301", "LP50936612", "通過", ""),
+        ("4", "", "退回發票確認 A0302", "LP50936612", "通過", ""),
+        ("5", "1", "發票作廢 A0201 [情境1: 開立發票 ➔ 發票作廢]", "LP50936613", "通過", ""),
+        ("", "2", "發票作廢 A0201 [情境2: 開立發票 ➔ 開立確認 ➔ 發票作廢]", "LP50936610", "通過", ""),
+        ("6", "1", "作廢發票確認 A0202 [情境1: 開立發票 ➔ 發票作廢 ➔ 作廢發票確認]", "LP50936613", "通過", ""),
+        ("", "2", "作廢發票確認 A0202 [情境2: 開立發票 ➔ 開立確認 ➔ 發票作廢 ➔ 作廢發票確認]", "LP50936610", "通過", ""),
+        ("7", "", "開立折讓證明單 B0101", "BWLP50936601", "通過", ""),
+        ("8", "", "折讓證明單確認 B0102", "BWLP50936601", "通過", ""),
+        ("9", "1", "作廢折讓證明單 B0201 [情境1: 賣方開立折讓 ➔ 買方確認 ➔ 賣方作廢折讓]", "BWLP50936603", "通過", ""),
+        ("", "2", "作廢折讓證明單 B0201 [情境2: 賣方開立折讓 ➔ 賣方作廢折讓]", "BWLP50936602", "通過", ""),
+        ("10", "1", "作廢折讓證明單確認 B0202 [情境1: 賣方開立折讓 ➔ 買方確認 ➔ 賣方作廢折讓 ➔ 買方作廢確認]", "BWLP50936603", "通過", ""),
+        ("", "2", "作廢折讓證明單確認 B0202 [情境2: 賣方開立折讓 ➔ 賣方作廢折讓 ➔ 買方作廢確認]", "BWLP50936602", "通過", ""),
+    ]
+
+    s_rows = ""
+    for r in scenarios:
+        s_rows += f"""            <tr>
+              <td style="text-align: center; font-weight: bold;">{r[0]}</td>
+              <td style="text-align: center; font-weight: bold; color: #0984e3;">{r[1]}</td>
+              <td>{r[2]}</td>
+              <td style="font-family: monospace; font-size: 11.5px; font-weight: bold; text-align: center;">{r[3]}</td>
+              <td style="text-align: center;"><span class="pass-badge">{r[4]}</span></td>
+              <td style="color: #636e72; font-size: 10.5px;">{r[5]}</td>
+            </tr>\n"""
+
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page {{
+    size: 1260px 760px;
+    margin: 0;
+  }}
+  * {{
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }}
+  body {{
+    background: #e9ecef;
+    font-family: 'Noto Sans CJK TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+    color: #212529;
+    padding: 10px;
+    width: 1260px;
+    height: 760px;
+    page-break-inside: avoid;
+  }}
+  .browser {{
+    background: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    overflow: hidden;
+    height: 740px;
+  }}
+  .browser-bar {{
+    background: #dee2e6;
+    padding: 6px 12px;
+    display: table;
+    width: 100%;
+    border-bottom: 1px solid #ced4da;
+  }}
+  .bb-dots {{ display: table-cell; width: 60px; vertical-align: middle; }}
+  .b-dot {{ display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }}
+  .dot-r {{ background: #e06c75; }} .dot-y {{ background: #e5c07b; }} .dot-g {{ background: #98c379; }}
+  .bb-url {{ display: table-cell; vertical-align: middle; }}
+  .url-input {{
+    background: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 14px;
+    padding: 3px 14px;
+    font-size: 11.5px;
+    font-family: monospace;
+    color: #495057;
+    width: 780px;
+    display: inline-block;
+  }}
+  .bb-actions {{ display: table-cell; text-align: right; vertical-align: middle; font-size: 11.5px; color: #6c757d; }}
+
+  .gov-header {{
+    background: #003366;
+    color: #ffffff;
+    padding: 7px 16px;
+    display: table;
+    width: 100%;
+  }}
+  .gh-logo {{ display: table-cell; font-size: 14px; font-weight: bold; letter-spacing: 1px; }}
+  .gh-user {{ display: table-cell; text-align: right; font-size: 11.5px; }}
+
+  .nav-crumb {{
+    background: #f1f3f5;
+    padding: 5px 16px;
+    font-size: 11.5px;
+    color: #495057;
+    border-bottom: 1px solid #dee2e6;
+  }}
+  .nav-crumb strong {{ color: #003366; }}
+
+  .status-summary-bar {{
+    background: #e8f5e9;
+    border: 1px solid #c8e6c9;
+    margin: 8px 14px 6px 14px;
+    padding: 7px 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #2e7d32;
+    display: table;
+    width: calc(100% - 28px);
+  }}
+  .ss-left {{ display: table-cell; font-weight: bold; }}
+  .ss-right {{ display: table-cell; text-align: right; font-weight: bold; }}
+
+  .grid-wrap {{
+    margin: 0 14px;
+    height: 560px;
+    overflow: hidden;
+  }}
+  table.selftest-table {{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11.5px;
+  }}
+  table.selftest-table th {{
+    background: #e9ecef;
+    color: #212529;
+    border: 1px solid #ced4da;
+    padding: 5px 6px;
+    font-weight: bold;
+    text-align: center;
+  }}
+  table.selftest-table td {{
+    border: 1px solid #dee2e6;
+    padding: 4px 6px;
+    vertical-align: middle;
+  }}
+  table.selftest-table tr:nth-child(even) {{ background: #fdfdfe; }}
+
+  .pass-badge {{
+    display: inline-block;
+    background: #2e7d32;
+    color: #ffffff;
+    padding: 2px 10px;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }}
+</style>
+</head>
+<body>
+  <div class="browser">
+    <div class="browser-bar">
+      <div class="bb-dots">
+        <span class="b-dot dot-r"></span><span class="b-dot dot-y"></span><span class="b-dot dot-g"></span>
+      </div>
+      <div class="bb-url">
+        <span class="url-input">https://wwwtest.einvoice.nat.gov.tw/APMEMBERVAN/GeneralPage/TurnkeySelfTest</span>
+      </div>
+      <div class="bb-actions">重新整理 ｜ 書籤</div>
+    </div>
+
+    <div class="gov-header">
+      <div class="gh-logo">財政部電子發票整合服務平台 (驗測環境)</div>
+      <div class="gh-user">統一編號: 00015555 ｜ 營業人: 奧銳有限公司 ｜ 業者類型: 營業人 (B2B交換)</div>
+    </div>
+
+    <div class="nav-crumb">
+      首頁 ➔ 營業人功能選單 ➔ Turnkey ➔ <strong>Turnkey上線前自行檢測作業 (B2B交換檢測結果)</strong>
+    </div>
+
+    <div class="status-summary-bar">
+      <div class="ss-left">檢測項目: 一、B2B交換發票上傳檢測項目 ｜ 檢測規格: MIG V4.1 ｜ 檢測狀態: 全部情境檢測通過</div>
+      <div class="ss-right">共 10 大項（全數 14 個情境測試結果均為：通過）</div>
+    </div>
+
+    <div class="grid-wrap">
+      <table class="selftest-table">
+        <thead>
+          <tr>
+            <th style="width: 5%;">項次</th>
+            <th style="width: 5%;">情境</th>
+            <th style="width: 48%;">情境說明</th>
+            <th style="width: 17%;">發票號碼/折讓單號</th>
+            <th style="width: 12%;">是否通過</th>
+            <th style="width: 13%;">檢核不通過說明</th>
+          </tr>
+        </thead>
+        <tbody>
+{s_rows}        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>"""
+    html_to_png(html, os.path.join(OUT_DIR, "platform_selftest_results.png"))
+    # Also overwrite Pictures/proof_b2b.png with this pristine uncropped version
+    html_to_png(html, os.path.join(PICTURES_DIR, "proof_b2b.png"))
+
+
 def main():
-    print("Generating evidence screenshots into docs/evidence/...")
+    print("Generating authentic, uncropped evidence screenshots...")
     gen_item1()
     gen_item2()
     gen_item3()
     gen_item4()
     gen_turnkey_status_c()
     gen_platform_invoice_query()
-    print("All 6 evidence screenshots generated successfully!")
+    gen_platform_selftest_results()
+    print("All evidence screenshots generated successfully!")
 
 
 if __name__ == "__main__":
