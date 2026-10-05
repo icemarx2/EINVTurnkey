@@ -13,7 +13,7 @@ from lxml import etree
 
 DOCS_DIR = "/invoice/EINVTurnkey/docs"
 SRC_ODT = os.path.join(DOCS_DIR, "5440_original.odt")
-OUT_ODT = os.path.join(DOCS_DIR, "03_電子發票Turnkey上線前自行檢測作業_4.8.1_Full_vB.odt")
+OUT_ODT = os.path.join(DOCS_DIR, "03_電子發票Turnkey上線前自行檢測作業_4.8.1.odt")
 
 IMG_B2B = "/invoice/EINVTurnkey/Pictures/proof_b2b.png"
 IMG_E0402 = "/invoice/EINVTurnkey/Pictures/proof_e0402.png"

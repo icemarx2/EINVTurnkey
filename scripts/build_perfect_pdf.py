@@ -894,11 +894,6 @@ def main():
     print(f"Compiling perfect A4 PDF using WeasyPrint to {OUT_PDF}...")
     subprocess.run(["weasyprint", HTML_FILE, OUT_PDF], check=True)
     print(f"Success! Output PDF size: {os.path.getsize(OUT_PDF)} bytes.")
-    
-    out_vb_pdf = os.path.join(DOCS_DIR, "03_電子發票Turnkey上線前自行檢測作業_4.8.1_Full_vB.pdf")
-    import shutil
-    shutil.copyfile(OUT_PDF, out_vb_pdf)
-    print(f"Also copied to {out_vb_pdf}")
 
 if __name__ == "__main__":
     main()
