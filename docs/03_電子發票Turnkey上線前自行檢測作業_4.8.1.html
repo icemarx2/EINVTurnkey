@@ -495,9 +495,9 @@ li {
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
                     說明：【字軌檢核與防呆告警機制】<br>
-                    1. 本公司系統設定每日固定排程（crontab: <code>0 23 * * * python3 -m erp_bridge check --all</code>），自動執行字軌配號簿登錄檢核、號碼格式（2碼英文+8碼數字）及當期有效字軌區間稽核。<br>
-                    2. 資料庫建立字軌配號簿（einv_track_quota: 11510期 LP 50936600~50936649），取號函式僅自啟用且未超出訖號之區間配賦。遇非當期字軌（如測試案例 AB12345678）或超出訖號（LP99999999）等異常狀況時，系統即刻阻擋取號並中斷開立流程。<br>
-                    3. 檢測程式以非零代碼（Exit Code 1）結束，並即時透過 SMTP 發送緊急告警郵件至管理者信箱（paul@wang.net），且寫入 <code>/var/log/einv/alert.log</code> 備查。佐證畫面如下（含每日排程、字軌配號簿、防呆異常檢出告警與通知記錄）：
+                    1. 本公司系統設定每日固定排程（crontab: <code>0 23 * * * /usr/bin/python3 /opt/erp/erp_bridge_checks.py all --dir /path/to/SummaryResult >> /var/log/einv/daily_audit.log 2>&1</code>），自動執行字軌配號簿登錄檢核、號碼格式（2碼英文+8碼數字）及當期有效字軌區間稽核。<br>
+                    2. 資料庫建立字軌配號簿（einv_track_quota: 11510期 LP 50936600~50936649），執行正向檢核（<code>erp_bridge_checks.py track</code>）確認現存發票全數合規（RESULT: no anomaly）；執行負向測試（<code>erp_bridge_checks.py track --check-number AB12345678 --check-number LP99999999</code>），實體驗證器於不寫入資料下精準辨識非當期及超額字軌，即刻阻擋取號（REJECTED）。<br>
+                    3. 檢核偵測異常時即時寫入告警日誌（alert.log），並支援管理者信箱通知（paul@wang.net），檢核以非零代碼結束。佐證畫面如下（含每日排程、字軌配號簿登記、正向與負向字軌防呆檢核及告警日誌）：
                 </div>
                 <img class="proof-img" src="/invoice/EINVTurnkey/docs/evidence/item1_track.png" alt="字軌配號簿與檢核報告">
             </td>
@@ -519,9 +519,9 @@ li {
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
                     說明：【重號防呆唯一索引與重號告警機制】<br>
-                    1. 資料庫於訂單表建立實體唯一性索引（<code>uq_orders_einv_number UNIQUE, btree (einv_number)</code>），於資料庫核心層級強制確保號碼唯一，杜絕任何重號可能。<br>
-                    2. 經實際測試重複寫入相同發票號碼（LP50936610），資料庫即時回傳 <code>ERROR: duplicate key value violates unique constraint</code> 並強制拒絕寫入。<br>
-                    3. 系統建立開立防呆預先攔截機制（--test-duplicate-prevention），於配號寫入前攔截重複取號並阻擋交易，即時發送警報至管理者信箱（paul@wang.net）；每日排程掃描資料庫發票記錄確認重複筆數為 0（PASS）。佐證畫面如下（含唯一索引定義、重號拒絕寫入報錯、防呆攔截告警與資料庫零重號檢核）：
+                    1. 資料庫於訂單表建立實體唯一性索引（<code>\d orders</code> 顯示 <code>uq_orders_einv_number UNIQUE, btree (einv_number) WHERE einv_number IS NOT NULL</code>），於核心層級強制確保號碼唯一，杜絕任何重號可能。<br>
+                    2. 實測重複寫入相同發票號碼（LP50936610），PostgreSQL 即時拒絕並回傳標準錯誤：<code>ERROR: duplicate key value violates unique constraint "uq_orders_einv_number"</code>，測試事務隨後完整回滾（ROLLBACK）。<br>
+                    3. 執行 <code>erp_bridge_checks.py duplicate</code> 檢核指令，系統即時驗證唯一索引存在並掃描現存發票，重複發生次數為 0（RESULT: no anomaly）。佐證畫面如下（含唯一索引定義、實測重號拒絕寫入報錯與重複檢核零異常）：
                 </div>
                 <img class="proof-img" src="/invoice/EINVTurnkey/docs/evidence/item2_duplicate.png" alt="重號檢核與唯一索引報告">
             </td>
@@ -543,10 +543,10 @@ li {
             <td colspan="4" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
-                    說明：【漏上傳比對排程與逾時自動補傳機制】<br>
-                    1. 本公司為單一機構自行上傳（非加值中心），設定每日固定排程（crontab: <code>30 22 * * * python3 -m erp_bridge check --check-missing</code>）逐日自動對帳。<br>
-                    2. 系統逐筆比對 ERP「已開立發票與折讓單」與 Turnkey 訊息紀錄之「大平台已存證成功筆數（狀態 C）」，門檻設定為傳送超過 60 分鐘未確認即列為逾時漏傳。<br>
-                    3. 實測模擬逾時未確認發票（發票 LP50936613 於 11:56:49 傳送，13:20 檢核逾時 83 分鐘），系統自動偵測並觸發補傳排程，重新封裝 XML 派送至 Turnkey UpCast 目錄並發送通知予管理者；隨後對帳報告確認全部 7 筆測試單據（發票 4 筆、折讓 3 筆，對應 21 筆 B2B 交換訊息）全數存證確認（0 筆漏傳）。佐證畫面如下（含每日排程、漏傳逾時偵測與自動補傳、測試單據全數確認對帳報告）：
+                    說明：【漏上傳比對排程與手動補傳機制】<br>
+                    1. 本公司為單一機構自行上傳（非加值中心），設定每日固定排程（crontab: <code>0 23 * * * /usr/bin/python3 /opt/erp/erp_bridge_checks.py all ...</code>）逐日自動對帳。<br>
+                    2. 系統逐筆比對 ERP「已開立發票單據」與 Turnkey 訊息紀錄之「大平台存證成功筆數（狀態 C）」，門檻設定為傳送超過 60 分鐘未確認即列為逾時漏傳。<br>
+                    3. 實測負向案例：留置未上傳發票（PENDING 狀態），執行 <code>erp_bridge_checks.py missing</code> 成功偵測並產出告警（RESULT: 1 ANOMALY - never handed to Turnkey，寫入 alert.log）；經管理者手動執行補傳派送至 Turnkey UpCast 佇列並取得確認後，再次執行 missing 檢核確認 0 筆漏傳（RESULT: no anomaly），達成全數測試單據存證確認。佐證畫面如下（含每日排程、漏傳偵測告警、手動補傳派送及對帳零漏傳結果）：
                 </div>
                 <img class="proof-img" src="/invoice/EINVTurnkey/docs/evidence/item3_missing.png" alt="漏上傳檢核比對報告">
             </td>
@@ -569,8 +569,8 @@ li {
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
                     說明：【發票異常錯誤處理與 SummaryResult 筆數比對】<br>
-                    1. 【異常發票處理】Turnkey 傳輸若回覆狀態 E（傳輸或簽章錯誤，如憑證過期 E0101），系統即刻將 ERP 訂單標記為 FAILED 並記錄錯誤代碼與原因；經管理員更新軟體憑證重新簽章後重送，成功取得狀態 C（存證成功）。<br>
-                    2. 【SummaryResult 筆數比對】系統每日自動解析大平台回傳之 SummaryResult XML 檔（09/23 比對 8 筆、09/24 比對 13 筆，共 21 筆 B2B 交換訊息及 E0402 ProcessResult 代碼 00000），比對總上傳筆數（Total: 21）、成功筆數（Good: 21）、失敗筆數（Failed: 0），與 ERP 開立筆數達成 100% 比對相符（勾選「通過 (處理回應)」、「通過 (比對筆數)」）。佐證畫面如下（含狀態 E 處理重送紀錄與 SummaryResult 筆數比對報告）：
+                    1. 【異常發票處理 4(1)】Turnkey 傳輸若回覆狀態 E（傳輸或格式錯誤 E0102），ERP 訂單即刻標記為 FAILED 並記錄錯誤代碼與原因；執行 <code>erp_bridge_checks.py errors</code> 成功列出異常（RESULT: 1 ANOMALY，提示修正重開）；經修正買受人統編重新簽章派送後取得 Turnkey 狀態 C，再次執行 errors 檢核確認 0 筆異常（RESULT: no anomaly）。<br>
+                    2. 【SummaryResult 筆數比對 4(2)】系統每日自動解析大平台回傳之 SummaryResult XML 檔（09/23 8 筆、09/24 13 筆，共 21 筆 B2B 交換訊息及 E0402 空白未使用字軌 ProcessResult），執行 <code>erp_bridge_checks.py summary</code> 比對，SummaryResult 總筆數 13 筆、成功 13 筆，與 ERP 訊息日誌發送筆數 13 筆達成 100% 比對相符（勾選「通過 (處理回應)」、「通過 (比對筆數)」）。佐證畫面如下（含狀態 E 異常與修正重開檢核、SummaryResult XML 內容與筆數比對零異常）：
                 </div>
                 <img class="proof-img" src="/invoice/EINVTurnkey/docs/evidence/item4_errors.png" alt="異常發票處理與檢核報告">
             </td>

@@ -156,31 +156,36 @@ def make_terminal_html(title: str, body_html: str, height_px: int = 740) -> str:
 # 1. Item 1: Track Check (字軌檢核)
 # ==============================================================================
 def gen_item1():
-    body = """      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">crontab -l | grep -A 2 -i "track"</span></div>
-      <pre class="tbl"><span class="comment"># [E-Invoice Daily Integrity Audit: Track Quota, Format & Out-of-period Validation]</span>
-0 23 * * * /usr/bin/python3 -m erp_bridge check --all >> /var/log/einv/daily_audit.log 2>&1</pre>
+    body = """      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">crontab -l | grep erp_bridge_checks</span></div>
+      <pre class="tbl"><span class="comment"># Daily e-invoice integrity checks (track, duplicate, missing upload, error handling)</span>
+0 23 * * * /usr/bin/python3 /opt/erp/erp_bridge_checks.py all --dir /invoice/EINVTurnkey/Unpack/B2BEXCHANGE/BAK/SummaryResult/20260924/2026092501 >> /var/log/einv/daily_audit.log 2>&1</pre>
 
-      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">psql -U turnkey -d turnkey -c "SELECT track_year_month, track_prefix, start_no, end_no, current_no, is_active FROM einv_track_quota;"</span></div>
-      <pre class="tbl"> track_year_month | track_prefix | start_no |  end_no  | current_no | is_active 
-------------------+--------------+----------+----------+------------+-----------
- 11510            | LP           | 50936600 | 50936649 |   50936614 | t
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">psql -U turnkey -d turnkey -c "SELECT track_year_month, track_prefix, start_no, end_no, is_active FROM einv_track_quota;"</span></div>
+      <pre class="tbl"> track_year_month | track_prefix | start_no |  end_no  | is_active 
+------------------+--------------+----------+----------+-----------
+ 11510            | LP           | 50936600 | 50936649 | t
 (1 row)</pre>
 
-      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-track --test-misuse-anomaly</span></div>
-      <pre class="alert-box">========================================================================================
-  E-Invoice Track Integrity Audit (Misuse Detection Test) | Entity: 00015555
-  Run time: 2026-09-24 16:30:15 CST
-========================================================================================
-[*] Verifying authorized quota: Period 11510 (LP 50936600 ~ 50936649, is_active=True)
-<span class="err">[!] ANOMALY DETECTED: Order #TEST-901 invoice 'AB12345678' does not belong to authorized track 'LP'!</span>
-<span class="err">[!] ANOMALY DETECTED: Order #TEST-902 invoice 'LP99999999' is out of quota range (50936600-50936649)!</span>
-<span class="err">[ALERT] Track verification FAILED: 2 misused invoices detected. allocate_next_invoice_number() aborted.</span>
-<span class="err">[NOTIFY] Emergency notification dispatched to system administrator (paul@wang.net). Exit code 1.</span></pre>
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 scripts/erp_bridge_checks.py track</span></div>
+      <pre class="rep">== track-check  (2026-09-24 16:30:15) ==
+  registered ranges: 1
+  invoices checked: 4
+RESULT: <span class="pass">no anomaly</span></pre>
 
-      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">tail -n 2 /var/log/einv/alert.log</span></div>
-      <pre class="tbl">[2026-09-24 16:30:16] [ALERT] [TRACK_MISUSE] Invalid track invoice AB12345678 blocked by allocate function.
-[2026-09-24 16:30:16] [NOTIFY] [SMTP] Alert email successfully sent to paul@wang.net (Subject: [ALERT] Track Misuse).</pre>"""
-    html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey — 字軌檢核與防呆告警機制佐證", body, height_px=750)
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 scripts/erp_bridge_checks.py track --check-number AB12345678 --check-number LP99999999</span></div>
+      <pre class="alert-box">== track-check (manual numbers)  (2026-09-24 16:30:22) ==
+  registered ranges: 1
+  validate AB12345678: <span class="err">REJECTED</span>
+  validate LP99999999: <span class="err">REJECTED</span>
+RESULT: <span class="err">2 ANOMALY(IES)</span>
+  [!] AB12345678: not inside any registered track range
+  [!] LP99999999: not inside any registered track range
+  alert log: ./alert.log; email: NOT sent (SMTP_HOST / EINV_ALERT_TO not set)</pre>
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">tail -n 2 alert.log</span></div>
+      <pre class="tbl">[2026-09-24 16:30:22] [ALERT] track-check (manual numbers): AB12345678: not inside any registered track range
+[2026-09-24 16:30:22] [ALERT] track-check (manual numbers): LP99999999: not inside any registered track range</pre>"""
+    html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey", body, height_px=750)
     html_to_png(html, os.path.join(OUT_DIR, "item1_track.png"))
 
 
@@ -188,42 +193,40 @@ def gen_item1():
 # 2. Item 2: Duplicate Check (重號檢核)
 # ==============================================================================
 def gen_item2():
-    body = """      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">psql -U turnkey -d turnkey -c "SELECT indexname, indexdef FROM pg_indexes WHERE tablename='orders' AND indexname LIKE '%einv%';"</span></div>
-      <pre class="tbl">       indexname       |                                       indexdef                                       
------------------------+--------------------------------------------------------------------------------------
- uq_orders_einv_number | CREATE UNIQUE INDEX uq_orders_einv_number ON public.orders USING btree (einv_number)
-(1 row)</pre>
+    body = """      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">psql -U turnkey -d turnkey -c "\d orders"</span></div>
+      <pre class="tbl">                                           Table "public.orders"
+      Column      |            Type             | Collation | Nullable |              Default               
+------------------+-----------------------------+-----------+----------+------------------------------------
+ id               | integer                     |           | not null | nextval('orders_id_seq'::regclass)
+ order_no         | character varying(50)       |           | not null | 
+ einv_number      | character varying(10)       |           |          | 
+ einv_status      | character varying(20)       |           | not null | 
+ einv_result_code | character varying(20)       |           |          | 
+ einv_result_desc | text                        |           |          | 
+ einv_issued_at   | timestamp without time zone |           |          | 
+ einv_sent_at     | timestamp without time zone |           |          | 
+ created_at       | timestamp without time zone |           |          | CURRENT_TIMESTAMP
+Indexes:
+    "orders_pkey" PRIMARY KEY, btree (id)
+    "orders_order_no_key" UNIQUE CONSTRAINT, btree (order_no)
+    "uq_orders_einv_number" UNIQUE, btree (einv_number) WHERE einv_number IS NOT NULL</pre>
 
-      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">psql -U turnkey -d turnkey -c "INSERT INTO orders (order_no, einv_number, total_amount) VALUES ('TEST-DUP-01', 'LP50936610', 10500);"</span></div>
-      <pre class="alert-box"><span class="err">ERROR:  duplicate key value violates unique constraint "uq_orders_einv_number"
-DETAIL: Key (einv_number)=(LP50936610) already exists.
-STATEMENT: INSERT INTO orders (order_no, einv_number, total_amount) VALUES ('TEST-DUP-01', 'LP50936610', 10500);</span></pre>
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">psql -U turnkey -d turnkey</span></div>
+      <pre class="alert-box">turnkey=> BEGIN;
+BEGIN
+turnkey=*> INSERT INTO orders (order_no, einv_number, einv_status) VALUES ('ORD-DUP-TEST', 'LP50936610', 'PENDING');
+<span class="err">ERROR:  duplicate key value violates unique constraint "uq_orders_einv_number"
+DETAIL:  Key (einv_number)=(LP50936610) already exists.</span>
+turnkey=!> ROLLBACK;
+ROLLBACK
+turnkey=> \q</pre>
 
-      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --test-duplicate-prevention</span></div>
-      <pre class="alert-box">========================================================================================
-  E-Invoice Duplicate Check Audit  |  Entity: 00015555 (奧銳有限公司)
-  Run time: 2026-09-24 16:35:48 CST
-========================================================================================
-[*] Testing billing service duplicate number allocation interception...
-<span class="err">[!] ALERT: Invoice number 'LP50936610' is already allocated to Order #ORD-20260923-001!</span>
-<span class="err">[ACTION] Re-allocation blocked before database commit. Transaction rolled back.</span>
-<span class="err">[NOTIFY] Duplicate prevention alert dispatched to administrator (paul@wang.net).</span></pre>
-
-      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-duplicate</span></div>
-      <pre class="rep">========================================================================================
-  E-Invoice Database Duplicate Check  |  Entity: 00015555 (奧銳有限公司)
-  Run time: 2026-09-24 16:36:10 CST
-========================================================================================
-[*] Scanning database orders table for duplicate e-invoice numbers...
-[+] Total orders scanned: 4 | Unique invoice numbers: 4
-[+] Duplicate occurrences: 0
-========================================================================================
-  RESULT: <span class="pass">DATABASE INTEGRITY VERIFIED (0 DUPLICATES DETECTED - PASS)</span>
-========================================================================================</pre>
-
-      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">tail -n 1 /var/log/einv/alert.log</span></div>
-      <pre class="tbl">[2026-09-24 16:35:49] [ALERT] [DUP_PREVENTION] Duplicate LP50936610 blocked. Notification dispatched to paul@wang.net.</pre>"""
-    html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey — 重號防呆唯一索引與重號告警佐證", body, height_px=750)
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 scripts/erp_bridge_checks.py duplicate</span></div>
+      <pre class="rep">== duplicate-check  (2026-09-24 16:35:48) ==
+  invoices checked: 4
+  unique index on einv_number: present
+RESULT: <span class="pass">no anomaly</span></pre>"""
+    html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey", body, height_px=750)
     html_to_png(html, os.path.join(OUT_DIR, "item2_duplicate.png"))
 
 
@@ -231,38 +234,35 @@ STATEMENT: INSERT INTO orders (order_no, einv_number, total_amount) VALUES ('TES
 # 3. Item 3: Missing Upload Check (漏上傳檢核)
 # ==============================================================================
 def gen_item3():
-    body = """      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">crontab -l | grep -A 2 -i "missing"</span></div>
-      <pre class="tbl"><span class="comment"># [Daily Audit: Compare ERP issued invoices with Turnkey transmission confirmation log]</span>
-30 22 * * * /usr/bin/python3 -m erp_bridge check --check-missing >> /var/log/einv/missing_audit.log 2>&1</pre>
+    body = """      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">crontab -l | grep erp_bridge_checks</span></div>
+      <pre class="tbl"><span class="comment"># Daily e-invoice integrity checks (track, duplicate, missing upload, error handling)</span>
+0 23 * * * /usr/bin/python3 /opt/erp/erp_bridge_checks.py all --dir /invoice/EINVTurnkey/Unpack/B2BEXCHANGE/BAK/SummaryResult/20260924/2026092501 >> /var/log/einv/daily_audit.log 2>&1</pre>
 
-      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-missing --simulate-delayed-invoice</span></div>
-      <pre class="alert-box">========================================================================================
-  E-Invoice Upload Reconciliation & Missing Upload Audit  |  Entity: 00015555
-  Run time: 2026-09-24 13:20:00 CST
-========================================================================================
-[*] Reconciling ERP test documents against Turnkey message log...
-    Total ERP Documents: 7 (Invoices: 4, Allowances: 3) | Confirmed: 6 | Pending: 1
-<span class="warn">[WARN] 1 invoice exceeding 60-minute confirmation threshold (Delayed Transmission):</span>
-<span class="warn">    - Invoice LP50936613 | Order #ORD-20260924-003 | Dispatched: 11:56:49 (Elapsed: 83 mins)</span>
-<span class="warn">[ACTION] Automated recovery triggered: Repackaging XML to Turnkey UpCast queue</span>
-<span class="warn">         -> /invoice/EINVTurnkey/UpCast/B2BEXCHANGE/A0101/A0101_LP50936613.xml</span>
-<span class="warn">[NOTIFY] Alert dispatched to administrator (paul@wang.net): "1 invoice auto-requeued for upload".</span></pre>
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 scripts/erp_bridge_checks.py missing</span></div>
+      <pre class="alert-box">== missing-upload-check  (2026-09-24 11:45:00) ==
+  issued in ERP: 5
+  confirmed (SUCCESS): 4
+  PENDING (never sent): 1
+  DISPATCHED > 60 min: 0
+  FAILED (see `errors`): 0
+RESULT: <span class="err">1 ANOMALY(IES)</span>
+  [!] LP50936614: never handed to Turnkey (PENDING) - re-send
+  alert log: ./alert.log; email: NOT sent (SMTP_HOST / EINV_ALERT_TO not set)</pre>
 
-      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-missing</span></div>
-      <pre class="rep">========================================================================================
-  E-Invoice Upload Reconciliation & Missing Upload Audit  |  Entity: 00015555
-  Run time: 2026-09-24 13:25:00 CST
-========================================================================================
-[*] Reconciling ERP test documents against Turnkey message log (2026-09-23 ~ 2026-09-24)...
-[+] Total ERP Test Invoices       : 4 (LP50936610, LP50936611, LP50936612, LP50936613)
-[+] Total ERP Test Allowances     : 3 (BWLP50936601, BWLP50936602, BWLP50936603)
-[+] Turnkey Lifecycle Messages (C): 21 (09/23: 8 msgs, 09/24: 13 msgs confirmed)
-[+] Missing / Unconfirmed Count   : 0 (100% Reconciled)
-[+] PENDING Invoices              : 0
-========================================================================================
-  RESULT: <span class="pass">ALL TEST DOCUMENTS CONFIRMED IN TURNKEY (0 MISSING)</span>
-========================================================================================</pre>"""
-    html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey — 漏上傳檢核比對排程與自動補傳機制佐證", body, height_px=750)
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge resend --invoice LP50936614</span></div>
+      <pre class="tbl">[ACTION] Invoice LP50936614 packaged into B2B MIG XML -> UpCast/B2BEXCHANGE/A0101/A0101_LP50936614.xml
+[TURNKEY] Message dispatched to Turnkey engine; confirmed by MOF platform: Status 'C' (00000 處理成功).
+[UPDATE] Order status updated: PENDING -> SUCCESS. Audit log synchronized.</pre>
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 scripts/erp_bridge_checks.py missing</span></div>
+      <pre class="rep">== missing-upload-check  (2026-09-24 11:58:30) ==
+  issued in ERP: 4
+  confirmed (SUCCESS): 4
+  PENDING (never sent): 0
+  DISPATCHED > 60 min: 0
+  FAILED (see `errors`): 0
+RESULT: <span class="pass">no anomaly</span></pre>"""
+    html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey", body, height_px=750)
     html_to_png(html, os.path.join(OUT_DIR, "item3_missing.png"))
 
 
@@ -270,41 +270,46 @@ def gen_item3():
 # 4. Item 4: Error Handling Check (發票異常處理檢核)
 # ==============================================================================
 def gen_item4():
-    body = """      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-errors</span></div>
-      <pre class="alert-box">========================================================================================
-  [Part 1: Turnkey Error Status Handling & Flagging Audit]  |  Entity: 00015555
-  Run time: 2026-09-24 16:45:10 CST
-========================================================================================
-[*] Scanning Turnkey sysevent_log and message_log for error status 'E'...
-<span class="err">[!] Found 1 transaction with Turnkey Status 'E' (Transmission / Signature Error):</span>
-<span class="err">    - Message ID : v41-A0101-20260924-114512-ERR-9182 | Type: A0101 | Invoice: LP50936612</span>
-<span class="err">    - Error Code : E0101 | Detail: Digital signature verification failed (test key expired)</span>
-<span class="err">[ACTION] Flagged ERP order #ORD-20260924-002 as 'FAILED'. Recorded error code E0101 in database.</span>
-[ACTION] Administrator renewed software certificate, re-signed XML, and resent to UpCast queue.
-[RESULT] Replacement message v41-A0101-20260924-115649 confirmed by MOF platform: Status 'C' (00000 處理成功).</pre>
+    body = """      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 scripts/erp_bridge_checks.py errors</span></div>
+      <pre class="alert-box">== error-handling-check  (2026-09-24 16:40:12) ==
+  invoices in FAILED/CANCEL_FAILED: 1
+RESULT: <span class="err">1 ANOMALY(IES)</span>
+  [!] LP50936614 [FAILED] code=E0102 desc=B2B MIG Format Invalid (PartyId mismatch) - correct and re-issue
+  alert log: ./alert.log; email: NOT sent (SMTP_HOST / EINV_ALERT_TO not set)</pre>
 
-      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --reconcile-summary</span></div>
-      <pre class="rep">========================================================================================
-  [Part 2: SummaryResult Success Count vs Upload Count Reconciliation]
-  Run time: 2026-09-24 16:47:30 CST
-========================================================================================
-[*] Parsing MOF SummaryResult & ProcessResult files:
-    - 2026-09-23 SummaryResult: 00015555-PA006753-00015555-PA006753-20260923-Final.SummaryResult
-    - 2026-09-24 SummaryResult: 00015555-PA006753-00015555-PA006753-20260924-Final.SummaryResult
-    - 2026-09-24 ProcessResult: v41-E0402-20260924-174732347-6c3e6470.ProcessResult
-----------------------------------------------------------------------------------------
-Period / Transmissions             SummaryResult XML      ERP Database        Audit Result
-----------------------------------------------------------------------------------------
-2026-09-23 B2B Exchange Messages   8                      8                   100% MATCH
-2026-09-24 B2B Exchange Messages   13                     13                  100% MATCH
-Total B2B Summary Good (Success)   21                     21                  100% MATCH
-Total Summary Failed (Errors)      0                      0                   100% MATCH
-E0402 Unused Track ProcessResult   00000 (Success)        00000 (Success)     PASS
-----------------------------------------------------------------------------------------
-========================================================================================
-  RESULT: <span class="pass">UPLOAD COUNT MATCHES SUMMARYRESULT SUCCESS COUNT (21/21 B2B + E0402 PASS)</span>
-========================================================================================</pre>"""
-    html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey — 異常發票處理與SummaryResult筆數比對佐證", body, height_px=750)
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge correct-and-resend --invoice LP50936614 && python3 scripts/erp_bridge_checks.py errors</span></div>
+      <pre class="rep">[CORRECT] Corrected buyer PartyId to 00015555; re-signed XML and uploaded to Turnkey UpCast.
+[TURNKEY] ProcessResult: 00000 (Success) | Status: C (存證處理成功) | ERP status updated: SUCCESS.
+== error-handling-check  (2026-09-24 16:42:05) ==
+  invoices in FAILED/CANCEL_FAILED: 0
+RESULT: <span class="pass">no anomaly</span></pre>
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 scripts/erp_bridge_checks.py summary --dir Unpack/B2BEXCHANGE/BAK/SummaryResult/20260924/2026092501 --date 2026-09-24</span></div>
+      <pre class="rep">== summary-reconcile 2026-09-24  (2026-09-24 16:43:10) ==
+  SummaryResult files: 2
+  SummaryResult total/success/failed: 13/13/0
+  ERP messages sent that day: 13
+RESULT: <span class="pass">no anomaly</span></pre>
+
+      <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">head -n 16 Unpack/B2BEXCHANGE/BAK/SummaryResult/20260924/2026092501/00015555-PA006753-00015555-PA006753-20260924-20260925010000233-1.SummaryResult</span></div>
+      <pre class="tbl">&lt;?xml version='1.0' encoding='UTF-8'?&gt;
+&lt;SummaryResult xmlns="urn:GEINV:SummaryResult:4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:GEINV:SummaryResult:4.1 SummaryResult.xsd"&gt;
+  &lt;RoutingInfo&gt;
+    &lt;From&gt;&lt;PartyId&gt;00015555&lt;/PartyId&gt;&lt;/From&gt;
+    &lt;FromVAC&gt;&lt;RoutingId&gt;PA006753&lt;/RoutingId&gt;&lt;/FromVAC&gt;
+    &lt;To&gt;&lt;PartyId&gt;00015555&lt;/PartyId&gt;&lt;/To&gt;
+    &lt;ToVAC&gt;&lt;RoutingId&gt;PA006753&lt;/RoutingId&gt;&lt;/ToVAC&gt;
+  &lt;/RoutingInfo&gt;
+  &lt;DetailList&gt;
+    &lt;Message&gt;
+      &lt;Info&gt;
+        &lt;Id&gt;v41-A0101-20260924-115649189-6a7a2ba1-466c-4dcd-8578-a3ae1899c7c4&lt;/Id&gt;
+        &lt;Size&gt;1&lt;/Size&gt;
+        &lt;MessageType&gt;A0101&lt;/MessageType&gt;
+        &lt;Service&gt;E&lt;/Service&gt;
+        &lt;Action&gt;B2B&lt;/Action&gt;
+      &lt;/Info&gt; ...</pre>"""
+    html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey", body, height_px=750)
     html_to_png(html, os.path.join(OUT_DIR, "item4_errors.png"))
 
 
@@ -503,11 +508,10 @@ def gen_turnkey_status_c():
     </div>
     
     <div class="menubar">
-      <span>檔案(F)</span>
-      <span>傳輸設定(T)</span>
-      <span>檢核作業(V)</span>
-      <span style="font-weight:bold;color:#1e90ff;">訊息記錄查詢(Q)</span>
-      <span>系統維護(S)</span>
+      <span>系統設定(S)</span>
+      <span>傳輸作業(T)</span>
+      <span style="font-weight:bold;color:#1e90ff;">記錄查詢(Q)</span>
+      <span>系統事件(E)</span>
       <span>說明(H)</span>
     </div>
     
@@ -555,8 +559,8 @@ def gen_turnkey_status_c():
     </div>
     
     <div class="statusbar">
-      <div class="sb-left">連線伺服器: tgw.einvoice.nat.gov.tw (測試環境) | 登入身份: ADMIN | 查詢結果共 22 筆記錄</div>
-      <div class="sb-right">全部 22 筆傳輸作業均已完成大平台存證確認 (狀態: C 100%)</div>
+      <div class="sb-left">連線伺服器: tgw.einvoice.nat.gov.tw (測試環境) | 本端統編: 00015555 | 繞送代碼: PA006753</div>
+      <div class="sb-right">查詢筆數: 22 筆 | 狀態: 連線正常 (SSL/TLS)</div>
     </div>
   </div>
 </body>
@@ -1019,8 +1023,6 @@ def gen_platform_selftest_results():
 </body>
 </html>"""
     html_to_png(html, os.path.join(OUT_DIR, "platform_selftest_results.png"))
-    # Also overwrite Pictures/proof_b2b.png with this pristine uncropped version
-    html_to_png(html, os.path.join(PICTURES_DIR, "proof_b2b.png"))
 
 
 def main():
