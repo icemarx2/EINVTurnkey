@@ -18,6 +18,39 @@ OUT_ODT = os.path.join(DOCS_DIR, "03_電子發票Turnkey上線前自行檢測作
 IMG_B2B = "/invoice/EINVTurnkey/Pictures/proof_b2b.png"
 IMG_E0402 = "/invoice/EINVTurnkey/Pictures/proof_e0402.png"
 
+# Real screenshots supplied by the operator. Only files that exist are embedded.
+EVIDENCE_DIR = "/invoice/EINVTurnkey/docs/evidence"
+MAX_W_CM, MAX_H_CM = 15.5, 11.0
+USED_EVIDENCE = []   # (zip_name, path)
+MISSING_EVIDENCE = []
+
+
+def png_size(path):
+    import struct
+    with open(path, "rb") as f:
+        head = f.read(24)
+    return struct.unpack(">II", head[16:24])
+
+
+def add_evidence(cell, name, ns):
+    """Append `docs/evidence/<name>.png` to a table cell, scaled to fit, aspect preserved."""
+    path = os.path.join(EVIDENCE_DIR, name + ".png")
+    if not os.path.exists(path):
+        MISSING_EVIDENCE.append(name)
+        return
+    w, h = png_size(path)
+    scale = min(MAX_W_CM / w, MAX_H_CM / h)
+    wc, hc = round(w * scale, 2), round(h * scale, 2)
+    T, D, S, X = (f"{{{ns[k]}}}" for k in ("text", "draw", "svg", "xlink"))
+    zip_name = f"Pictures/ev_{name}.png"
+    USED_EVIDENCE.append((zip_name, path))
+    p = etree.SubElement(cell, f"{T}p", attrib={f"{T}style-name": "Standard"})
+    fr = etree.SubElement(p, f"{D}frame", attrib={
+        f"{D}name": f"Ev_{name}", f"{T}anchor-type": "as-char",
+        f"{S}width": f"{wc}cm", f"{S}height": f"{hc}cm", f"{D}z-index": "0"})
+    etree.SubElement(fr, f"{D}image", attrib={
+        f"{X}href": zip_name, f"{X}type": "simple", f"{X}show": "embed", f"{X}actuate": "onLoad"})
+
 def make_element(tag, parent=None, text=None, attrib=None, nsmap=None):
     if attrib is None:
         attrib = {}
@@ -137,8 +170,9 @@ def main():
     ])
     set_cell_paragraphs(t3_rows[2].xpath('./table:table-cell', namespaces=ns)[0], [
         ("P26", "(佐證畫面與說明)"),
-        ("P43", "說明：營業人開立系統已具備字軌號碼匯入與即時檢核防呆功能。開立發票時，系統自動檢驗發票期別（雙數月）、字軌類別、有效號碼區間及格式（2碼英文字軌+8碼數字流水號）。若遇非當期字軌、格式錯誤或超出配號範圍，系統即刻阻擋開立並跳出警示，杜絕誤用字軌情況。")
+        ("P43", "說明：本公司於 ERP 資料庫建立字軌配號簿（einv_track_quota），登錄大平台核配之期別、字軌英文代碼及起訖號。開立發票時由資料庫函式 allocate_next_invoice_number 僅自該期「啟用中且未超出訖號」之區間取號，無可用區間即拒絕開立。另每日執行發票檢核程式（python -m erp_bridge check），逐筆檢核已開立發票號碼格式（2碼英文+8碼數字）、是否落於已登錄且啟用之字軌區間（含非當期字軌），異常時於報告列示並以非零代碼結束，通知管理者處理。佐證畫面如下（字軌配號簿與檢核報告[1]）：")
     ])
+    add_evidence(t3_rows[2].xpath('./table:table-cell', namespaces=ns)[0], 'item1_track', ns)
 
     # Item 2 Check & Explanation
     set_cell_paragraphs(t3_rows[3].xpath('./table:table-cell', namespaces=ns)[3], [
@@ -147,8 +181,9 @@ def main():
     ])
     set_cell_paragraphs(t3_rows[4].xpath('./table:table-cell', namespaces=ns)[0], [
         ("P26", "(佐證畫面與說明)"),
-        ("P43", "說明：系統資料庫建立發票字軌號碼唯一性索引（Unique Constraint）與即時取號鎖定機制。發票開立時即時檢核字軌號碼是否重覆，若發生同店或跨店重複開立，系統立即阻斷交易並發送即時告警通知系統管理員，確保每張發票號碼絕對唯一。")
+        ("P43", "說明：取號函式以列鎖定（FOR UPDATE）逐號遞增，避免同時開立取得相同號碼；並於訂單表建立發票號碼唯一索引（uq_orders_einv_number），同一發票號碼無法重複寫入。發票檢核程式報告[2]逐日檢核是否有發票號碼被重複使用，如有重號即顯示 ALERT 及重複次數，通知管理者處理。佐證畫面如下（檢核報告[2]）：")
     ])
+    add_evidence(t3_rows[4].xpath('./table:table-cell', namespaces=ns)[0], 'item2_duplicate', ns)
 
     # Item 3 Check & Explanation
     set_cell_paragraphs(t3_rows[5].xpath('./table:table-cell', namespaces=ns)[3], [
@@ -158,8 +193,9 @@ def main():
     ])
     set_cell_paragraphs(t3_rows[6].xpath('./table:table-cell', namespaces=ns)[0], [
         ("P26", "(佐證畫面與說明)"),
-        ("P43", "說明：本公司為單一機構自行上傳（非加值中心）。系統排程每日定時比對開立發票總數與 Turnkey 交易日誌（Transaction Log）之上傳紀錄，若有未成功上傳之發票，即時觸發自動補傳排程，並發送告警郵件通知系統管理員追蹤處理。")
+        ("P43", "說明：本公司為單一機構自行上傳（非加值中心）。狀態同步程式讀取 Turnkey 訊息紀錄（turnkey_message_log）之 G/C 狀態並回寫 ERP 訂單。發票檢核程式報告[3]比對「已開立發票數」與「大平台已確認筆數」，並列出傳送超過 60 分鐘仍未確認（DISPATCHED）或尚未傳送（PENDING）之發票，供管理者補傳。佐證畫面如下（檢核報告[3]）：")
     ])
+    add_evidence(t3_rows[6].xpath('./table:table-cell', namespaces=ns)[0], 'item3_missing', ns)
 
     # Item 4 Check & Explanation
     set_cell_paragraphs(t3_rows[7].xpath('./table:table-cell', namespaces=ns)[3], [
@@ -169,8 +205,9 @@ def main():
     ])
     set_cell_paragraphs(t3_rows[8].xpath('./table:table-cell', namespaces=ns)[0], [
         ("P26", "(佐證畫面與說明)"),
-        ("P43", "說明：系統每日自動接收並解析財政部大平台回傳之 SummaryResult.xml 與 ProcessResult.xml。排程核對上傳總筆數與大平台成功接收筆數，若有傳輸失敗（E狀態）或回應錯誤代碼，系統自動將異常發票標記列管並發送警示通知，經管理人員更正後於時限內重新上傳。")
+        ("P43", "說明：Turnkey 回覆狀態為 E（錯誤）時，狀態同步程式將該發票標記為 FAILED 並記錄處理代碼；發票檢核程式報告[4]列出所有 FAILED／CANCEL_FAILED 發票及其處理代碼，由管理者依錯誤訊息更正後重新開立並上傳。佐證畫面如下（檢核報告[4]）：")
     ])
+    add_evidence(t3_rows[8].xpath('./table:table-cell', namespaces=ns)[0], 'item4_errors', ns)
 
     # Item 5 Check & Explanation
     set_cell_paragraphs(t3_rows[9].xpath('./table:table-cell', namespaces=ns)[3], [
@@ -209,8 +246,9 @@ def main():
     # R2 Cell 0 Turnkey Explanation
     set_cell_paragraphs(t8_rows[2].xpath('./table:table-cell[1]', namespaces=ns)[0], [
         ("P27", "(佐證畫面與說明)"),
-        ("P43", "說明：【Turnkey 處理結果確認】\n1. 本公司已建立完整之 Turnkey 傳輸與訊息記錄檢核機制。透過 Turnkey 系統【檢視訊息紀錄】及資料庫 transaction 日誌確認，所有 B2B 交換發票交易（開立 A0101、開立確認 A0102、作廢 A0201、作廢確認 A0202、退回 A0301、退回確認 A0302、折讓單開立 B0101、折讓單確認 B0102、作廢折讓單 B0201、作廢折讓單確認 B0202）及空白未使用字軌檔（E0402）均已全數傳送完成，狀態皆為「C」（大平台接收並存證成功）或「G」（Turnkey判讀資料已上傳），無任何「E」錯誤紀錄。\n2. 系統每日自動檢核 Turnkey 主機接收之 SummaryResult 與 ProcessResult，上傳發票筆數與大平台回覆成功筆數 100% 相符（處理代碼均為 00000 全部發票處理成功）。")
+        ("P43", "說明：【Turnkey 處理結果確認】\n透過 Turnkey【檢視訊息紀錄】查詢，本次 B2B 交換各情境（A0101、A0102、A0201、A0202、A0301、A0302、B0101、B0102、B0201、B0202）及空白未使用字軌檔（E0402）之傳送狀態為「C」（資料上傳完畢，且已收到大平台回覆之存證處理成功訊息）。佐證畫面如下（狀態為 C）：")
     ])
+    add_evidence(t8_rows[2].xpath('./table:table-cell[1]', namespaces=ns)[0], 'turnkey_status_c', ns)
 
     # R3 Cell 0 Checkbox -> ☑
     chk2 = t8_rows[3].xpath('./table:table-cell[1]/text:p', namespaces=ns)[0]
@@ -225,8 +263,9 @@ def main():
     p_t8_r4_label.text = "(佐證畫面與說明)"
     
     p_t8_r4_text = etree.SubElement(cell_t8_r4, f"{TEXT}p", attrib={f"{TEXT}style-name": "P43"})
-    p_t8_r4_text.text = "說明：【Web 大平台線上查詢驗證佐證】\n登入財政部電子發票整合服務平台（驗測環境 https://wwwtest.einvoice.nat.gov.tw），至【營業人功能選單 ➔ Turnkey ➔ Turnkey上線前自行檢測作業】，查詢 B2B 交換各項情境測試結果。全數 14 項情境測試（A0101、A0102、A0301、A0302、A0201情境1/2、A0202情境1/2、B0101、B0102、B0201情境1/2、B0202情境1/2）處理結果全數標示為「通過」，測試發票號碼及折讓單號核驗無誤。佐證畫面如下："
+    p_t8_r4_text.text = "說明：【Web 大平台查詢確認】\n登入電子發票整合服務平台驗測環境（https://wwwtest.einvoice.nat.gov.tw），至【營業人功能選單 ➔ 查詢與下載 ➔ 發票查詢】，可查得本次測試開立之發票，內容與開立資料相符。佐證畫面如下（發票查詢畫面；Turnkey上線前自行檢測各情境結果亦均為「通過」）："
 
+    add_evidence(cell_t8_r4, 'platform_invoice_query', ns)
     p_t8_img = etree.SubElement(cell_t8_r4, f"{TEXT}p", attrib={f"{TEXT}style-name": "Standard"})
     frame_b2b = etree.SubElement(p_t8_img, f"{DRAW}frame", attrib={
         f"{DRAW}name": "ImageB2B",
@@ -287,6 +326,12 @@ def main():
         f"{XLINK}actuate": "onLoad"
     })
 
+    # Register evidence images in the manifest
+    ev_entries = "".join(
+        f'  <manifest:file-entry manifest:full-path="{zn}" manifest:media-type="image/png"/>\n'
+        for zn, _ in USED_EVIDENCE) + "</manifest:manifest>"
+    manifest_xml = manifest_xml.replace("</manifest:manifest>", ev_entries)
+
     # Serialize back to XML
     out_content_bytes = etree.tostring(tree, encoding="utf-8", xml_declaration=True, standalone=True)
 
@@ -304,7 +349,12 @@ def main():
             zout.writestr("Pictures/proof_b2b.png", f.read())
         with open(IMG_E0402, "rb") as f:
             zout.writestr("Pictures/proof_e0402.png", f.read())
+        for zn, path in USED_EVIDENCE:
+            with open(path, "rb") as f:
+                zout.writestr(zn, f.read())
 
+    print("Evidence embedded :", [n for n, _ in USED_EVIDENCE] or "none")
+    print("Evidence MISSING  :", MISSING_EVIDENCE or "none")
     print("Version B ODT generated successfully via lxml!")
     print(f"File size: {os.path.getsize(OUT_ODT)} bytes")
 

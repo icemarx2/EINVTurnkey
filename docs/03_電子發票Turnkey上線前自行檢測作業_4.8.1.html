@@ -314,13 +314,12 @@ li {
     
     <div style="display: flex; justify-content: space-between; margin-top: 6px;">
         <strong>參、Turnkey 上線自行檢測</strong>
-        <span>第 4 頁</span>
     </div>
-    <div style="padding-left: 20px; color: #475569;">一、注意事項 (第 4 頁)</div>
-    <div style="padding-left: 20px; color: #475569;">二、前置作業檢測 (第 5 頁)</div>
-    <div style="padding-left: 20px; color: #475569;">三、連線環境設定檢測 (第 6 頁)</div>
-    <div style="padding-left: 20px; color: #475569;">四、上傳結果檢測 (第 7 頁)</div>
-    <div style="padding-left: 20px; color: #475569;">五、電子發票專用字軌檢測 (第 8 頁)</div>
+    <div style="padding-left: 20px; color: #475569;">一、注意事項</div>
+    <div style="padding-left: 20px; color: #475569;">二、前置作業檢測</div>
+    <div style="padding-left: 20px; color: #475569;">三、連線環境設定檢測</div>
+    <div style="padding-left: 20px; color: #475569;">四、上傳結果檢測</div>
+    <div style="padding-left: 20px; color: #475569;">五、電子發票專用字軌檢測</div>
 </div>
 
 <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 8px 12px; border-radius: 4px; font-size: 8pt; color: #475569; margin-top: 15px;">
@@ -461,8 +460,9 @@ li {
             <td colspan="4" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
-                    說明：本公司開立系統具備嚴格之字軌號碼匯入與即時檢核防呆機制。發票開立時，系統自動檢驗期別（雙數月）、字軌類別、有效號碼區間及防偽隨機碼（4位CSPRN隨機數）。若遇非當期字軌、格式錯誤或超出配賦號碼範圍，系統即刻阻擋開立並跳出警示通知，杜絕誤用字軌情況。
+                    說明：本公司於 ERP 資料庫建立字軌配號簿（einv_track_quota），登錄大平台核配之期別、字軌英文代碼及起訖號。開立發票時由資料庫函式 allocate_next_invoice_number 僅自該期「啟用中且未超出訖號」之區間取號，無可用區間即拒絕開立。另每日執行發票檢核程式（python -m erp_bridge check），逐筆檢核已開立發票號碼格式（2碼英文+8碼數字）、是否落於已登錄且啟用之字軌區間（含非當期字軌），異常時於報告列示並以非零代碼結束，通知管理者處理。佐證畫面如下（字軌配號簿與檢核報告[1]）：
                 </div>
+                <img class="proof-img" src="/invoice/EINVTurnkey/docs/evidence/item1_track.png" alt="字軌配號簿與檢核報告">
             </td>
         </tr>
 
@@ -480,8 +480,9 @@ li {
             <td colspan="4" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
-                    說明：系統資料庫在發票號碼欄位建立唯一性索引（Unique Constraint）與交易取號行鎖機制（Row Lock）。開立發票時即時檢核號碼是否已被使用；若檢出重號，資料庫立即拒絕寫入並觸發告警事件，通知系統管理員，確保每張發票號碼絕對唯一不重複。
+                    說明：取號函式以列鎖定（FOR UPDATE）逐號遞增，避免同時開立取得相同號碼；並於訂單表建立發票號碼唯一索引（uq_orders_einv_number），同一發票號碼無法重複寫入。發票檢核程式報告[2]逐日檢核是否有發票號碼被重複使用，如有重號即顯示 ALERT 及重複次數，通知管理者處理。佐證畫面如下（檢核報告[2]）：
                 </div>
+                <img class="proof-img" src="/invoice/EINVTurnkey/docs/evidence/item2_duplicate.png" alt="重號檢核與唯一索引報告">
             </td>
         </tr>
 
@@ -492,7 +493,7 @@ li {
             <td>營業人系統應建立功能，每日比對發票開立系統上傳發票數量與營業人接收端的發票數量是否相符，針對漏上傳發票應儘速補傳。分支機構發票透過總公司上傳，總公司系統應建立功能，每日檢核分支機構端上傳與總公司端接收的發票數量是否相符，針對漏上傳發票應儘速補傳。若為加值中心應建立功能，每日檢核營業人端上傳與加值中心端接收的發票數量是否相符，針對漏上傳發票應儘速通知該營業人補傳。若為加值中心應建立功能，每日產製未上傳營業人清單，通知該營業人確認是否上傳。</td>
             <td>
                 <span class="check">☑ 通過</span>　□ 不通過 (營業人端)<br>
-                <span class="check">☑ 單一機構或分支機構自行上傳</span><br>
+                <span class="check">☑ 單一機構自行上傳</span><br>
                 □ 通過　□ 不通過　<span class="check">☑ 非加值中心</span>
             </td>
         </tr>
@@ -500,8 +501,9 @@ li {
             <td colspan="4" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
-                    說明：本公司為單一機構自行上傳（非加值中心）。系統排程每日定時比對開立發票總數與 Turnkey 交易日誌（Transaction Log）之上傳紀錄，若有未成功上傳之發票，即時觸發自動補傳排程，並發送告警郵件通知系統管理員追蹤處理。
+                    說明：本公司為單一機構自行上傳（非加值中心）。狀態同步程式讀取 Turnkey 訊息紀錄（turnkey_message_log）之 G/C 狀態並回寫 ERP 訂單。發票檢核程式報告[3]比對「已開立發票數」與「大平台已確認筆數」，並列出傳送超過 60 分鐘仍未確認（DISPATCHED）或尚未傳送（PENDING）之發票，供管理者補傳。佐證畫面如下（檢核報告[3]）：
                 </div>
+                <img class="proof-img" src="/invoice/EINVTurnkey/docs/evidence/item3_missing.png" alt="漏上傳檢核比對報告">
             </td>
         </tr>
 
@@ -520,8 +522,9 @@ li {
             <td colspan="4" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
-                    說明：系統每日自動接收並解析財政部大平台回傳之 SummaryResult.xml 與 ProcessResult.xml。排程核對上傳總筆數與大平台成功接收筆數，若有傳輸失敗（E狀態）或回應錯誤代碼，系統自動將異常發票標記列管並發送警示通知，經管理人員更正後於時限內重新上傳。
+                    說明：Turnkey 回覆狀態為 E（錯誤）時，狀態同步程式將該發票標記為 FAILED 並記錄處理代碼；發票檢核程式報告[4]列出所有 FAILED／CANCEL_FAILED 發票及其處理代碼，由管理者依錯誤訊息更正後重新開立並上傳。佐證畫面如下（檢核報告[4]）：
                 </div>
+                <img class="proof-img" src="/invoice/EINVTurnkey/docs/evidence/item4_errors.png" alt="異常發票處理與檢核報告">
             </td>
         </tr>
 
@@ -539,7 +542,7 @@ li {
             <td colspan="4" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
-                    說明：本公司全數為 B2B 商業電子發票交換交易（交易對象均為具統一編號之營業人），未提供一般個人消費者會員載具服務，發票皆直接交付買受人統一編號或進行 B2B 交換，故無提供會員載具中獎通知需求（依規定勾選「無提供會員載具」）。
+                    說明：本公司全數為 B2B 商業電子發票交換交易（對象均為具統一編號之營業人），未提供一般個人消費者會員載具服務，發票皆直接交付買受人統一編號或進行 B2B 交換，故無提供會員載具中獎通知需求（勾選無提供會員載具）。
                 </div>
             </td>
         </tr>
@@ -715,9 +718,9 @@ li {
             <td colspan="3" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明：Turnkey 處理結果確認】</strong><br>
-                    1. 本公司已建立完整之 Turnkey 傳輸與訊息記錄檢核機制。透過 Turnkey 系統【檢視訊息紀錄】及資料庫 transaction 日誌確認，所有 B2B 交換發票交易（開立 A0101、開立確認 A0102、作廢 A0201、作廢確認 A0202、退回 A0301、退回確認 A0302、折讓單開立 B0101、折讓單確認 B0102、作廢折讓單 B0201、作廢折讓單確認 B0202）及空白未使用字軌檔（E0402）均已全數傳送完成，狀態皆為「C」（大平台接收並存證成功）或「G」（Turnkey判讀資料已上傳），無任何「E」錯誤紀錄。<br>
-                    2. 系統每日自動檢核 Turnkey 主機接收之 SummaryResult 與 ProcessResult，上傳發票筆數與大平台回覆成功筆數 100% 相符（處理代碼均為 00000 全部發票處理成功）。
+                    說明：透過 Turnkey【檢視訊息紀錄】查詢，本次 B2B 交換各情境（A0101、A0102、A0201、A0202、A0301、A0302、B0101、B0102、B0201、B0202）及空白未使用字軌檔（E0402）之傳送狀態為「C」（資料上傳完畢，且已收到大平台回覆之存證處理成功訊息）。佐證畫面如下（狀態為 C）：
                 </div>
+                <img class="proof-img" src="/invoice/EINVTurnkey/docs/evidence/turnkey_status_c.png" alt="Turnkey訊息記錄查詢狀態為C佐證畫面">
             </td>
         </tr>
 
@@ -735,8 +738,9 @@ li {
             <td colspan="3" style="background-color: #F8FAFC;">
                 <div class="desc-box">
                     <strong>【佐證畫面與說明：Web 大平台線上查詢驗證佐證】</strong><br>
-                    登入財政部電子發票整合服務平台（驗測環境 <code>https://wwwtest.einvoice.nat.gov.tw</code>），至【營業人功能選單 ➔ Turnkey ➔ Turnkey上線前自行檢測作業】，查詢 B2B 交換各項情境測試結果。全數 14 項情境測試（A0101、A0102、A0301、A0302、A0201情境1/2、A0202情境1/2、B0101、B0102、B0201情境1/2、B0202情境1/2）處理結果全數標示為「通過」，測試發票號碼及折讓單號核驗無誤。佐證畫面如下：
+                    說明：登入電子發票整合服務平台驗測環境（https://wwwtest.einvoice.nat.gov.tw），至【營業人功能選單 ➔ 查詢與下載 ➔ 發票查詢】，可查得本次測試開立之發票，內容與開立資料相符。佐證畫面如下（發票查詢畫面；Turnkey上線前自行檢測各情境結果亦均為「通過」）：
                 </div>
+                <img class="proof-img" src="/invoice/EINVTurnkey/docs/evidence/platform_invoice_query.png" alt="Web大平台發票查詢結果佐證畫面">
                 <img class="proof-img" src="/invoice/EINVTurnkey/Pictures/proof_b2b.png" alt="Web大平台B2B交換情境測試全數通過佐證">
             </td>
         </tr>

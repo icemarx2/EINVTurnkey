@@ -169,3 +169,11 @@ BEFORE UPDATE ON public.orders
 FOR EACH ROW EXECUTE FUNCTION public.trigger_einv_cancel_on_order_cancel();
 
 COMMENT ON FUNCTION public.trigger_einv_cancel_on_order_cancel() IS 'Auto-flag invoice for Turnkey F0501 cancellation when order internal_status becomes cancelled';
+
+-- ------------------------------------------------------------------------------
+-- 5. Duplicate-number guard (重號檢核)
+-- Purpose: Database-level guarantee that an invoice number can never be used by
+--          two orders, even if the allocation function is bypassed.
+-- ------------------------------------------------------------------------------
+CREATE UNIQUE INDEX IF NOT EXISTS uq_orders_einv_number
+    ON public.orders(einv_number) WHERE einv_number IS NOT NULL;

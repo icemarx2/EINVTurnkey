@@ -71,6 +71,36 @@ class SupabaseClient:
             raise RuntimeError(f"Failed to allocate invoice number from Supabase: {resp.status_code} - {resp.text}")
         return resp.json()
 
+    def get_all_einv_orders(self, page_size: int = 1000) -> List[Dict[str, Any]]:
+        """Fetches every order that has an invoice number (paged), for integrity checks."""
+        if not self.is_configured():
+            return []
+        cols = ("einv_number,einv_status,einv_result_code,einv_result_desc,"
+                "einv_cancel_result_code,einv_dispatched_at,einv_completed_at")
+        rows: List[Dict[str, Any]] = []
+        offset = 0
+        while True:
+            endpoint = (f"{self.url}/rest/v1/orders?einv_number=not.is.null"
+                        f"&select={cols}&order=id.asc&limit={page_size}&offset={offset}")
+            resp = self.session.get(endpoint, timeout=20)
+            if resp.status_code != 200:
+                raise RuntimeError(f"Error fetching orders: {resp.status_code} - {resp.text}")
+            batch = resp.json()
+            rows.extend(batch)
+            if len(batch) < page_size:
+                return rows
+            offset += page_size
+
+    def get_track_quotas(self) -> List[Dict[str, Any]]:
+        """Fetches all registered track quota ranges."""
+        if not self.is_configured():
+            return []
+        endpoint = f"{self.url}/rest/v1/einv_track_quota?select=*"
+        resp = self.session.get(endpoint, timeout=15)
+        if resp.status_code != 200:
+            raise RuntimeError(f"Error fetching track quotas: {resp.status_code} - {resp.text}")
+        return resp.json()
+
     def get_pending_issuance_orders(self, limit: int = 50) -> List[Dict[str, Any]]:
         """
         Fetches orders ready for invoice issuance:

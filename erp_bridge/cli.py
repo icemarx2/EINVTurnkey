@@ -91,6 +91,15 @@ def cmd_add_track(args):
         logger.error(f"Failed adding track quota: {e}")
         sys.exit(1)
 
+def cmd_check(args):
+    """Run daily integrity checks; exit code 1 if any alert is raised."""
+    from .checks import run_checks
+    sb = SupabaseClient()
+    if not sb.is_configured():
+        logger.error("Supabase is not configured. Please check .env file.")
+        sys.exit(2)
+    sys.exit(run_checks(sb))
+
 def cmd_status(args):
     """Print status summary."""
     sb = SupabaseClient()
@@ -133,6 +142,10 @@ def main():
     p_track.add_argument("--start", type=int, required=True, help="Start number (e.g. 50936600)")
     p_track.add_argument("--end", type=int, required=True, help="End number (e.g. 50939099)")
     p_track.set_defaults(func=cmd_add_track)
+
+    # check command
+    p_check = subparsers.add_parser("check", help="Run daily e-invoice integrity checks (track/duplicate/missing/error)")
+    p_check.set_defaults(func=cmd_check)
 
     # status command
     p_status = subparsers.add_parser("status", help="Show system status")
