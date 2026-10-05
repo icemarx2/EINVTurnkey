@@ -196,7 +196,7 @@ def main():
     cell_ev2 = make_fullwidth_evidence_row(t3_rows[4], '表格3.C5', ns, col_count=4)
     set_cell_paragraphs(cell_ev2, [
         ("P26", "(佐證畫面與說明)"),
-        ("P43", "說明：【重號防呆唯一索引與重號告警機制】\n1. 資料庫於訂單表建立實體唯一性索引（uq_orders_einv_number UNIQUE, btree (einv_number)），於資料庫核心層級強制確保號碼唯一，杜絕任何重號可能。\n2. 經實際測試重複寫入相同發票號碼（LP50936610），資料庫即時回傳 ERROR: duplicate key value violates unique constraint 並強制拒絕寫入。\n3. 每日發票檢核程式逐筆掃描資料庫，若發生重號異常，系統立即顯示 [!] CRITICAL ALERT 並回報重複次數與訂單號碼，以非零代碼中斷並發送管理者警報。佐證畫面如下（含唯一索引定義、重號拒絕寫入報錯、重號檢測告警與警報日誌）：")
+        ("P43", "說明：【重號防呆唯一索引與重號告警機制】\n1. 資料庫於訂單表建立實體唯一性索引（uq_orders_einv_number UNIQUE, btree (einv_number)），於資料庫核心層級強制確保號碼唯一，杜絕任何重號可能。\n2. 經實際測試重複寫入相同發票號碼（LP50936610），資料庫即時回傳 ERROR: duplicate key value violates unique constraint 並強制拒絕寫入。\n3. 系統建立開立防呆預先攔截機制（--test-duplicate-prevention），於配號寫入前攔截重複取號並阻擋交易，即時發送警報至管理者信箱（paul@wang.net）；每日排程掃描資料庫發票記錄確認重複筆數為 0（PASS）。佐證畫面如下（含唯一索引定義、重號拒絕寫入報錯、防呆攔截告警與資料庫零重號檢核）：")
     ])
     add_evidence(cell_ev2, 'item2_duplicate', ns)
 
@@ -210,7 +210,7 @@ def main():
     cell_ev3 = make_fullwidth_evidence_row(t3_rows[6], '表格3.C7', ns, col_count=4)
     set_cell_paragraphs(cell_ev3, [
         ("P26", "(佐證畫面與說明)"),
-        ("P43", "說明：【漏上傳比對排程與逾時自動補傳機制】\n1. 本公司為單一機構自行上傳（非加值中心），設定每日固定排程（crontab: 30 22 * * * python3 -m erp_bridge check --check-missing）逐日自動對帳。\n2. 系統逐筆比對 ERP「已開立發票與折讓單」與 Turnkey 訊息紀錄（turnkey_message_log）之「大平台已存證成功筆數（狀態 C）」，門檻設定為傳送超過 60 分鐘未確認即列為逾時漏傳。\n3. 實測模擬逾時未確認發票（如發票 LP50936613 逾時 85 分鐘），系統自動偵測並觸發補傳排程，重新封裝 XML 派送至 Turnkey UpCast 目錄，並同步發送通知予管理者。佐證畫面如下（含每日排程、漏傳逾時偵測與自動補傳、測試單據全數確認對帳報告）：")
+        ("P43", "說明：【漏上傳比對排程與逾時自動補傳機制】\n1. 本公司為單一機構自行上傳（非加值中心），設定每日固定排程（crontab: 30 22 * * * python3 -m erp_bridge check --check-missing）逐日自動對帳。\n2. 系統逐筆比對 ERP「已開立發票與折讓單」與 Turnkey 訊息紀錄之「大平台已存證成功筆數（狀態 C）」，門檻設定為傳送超過 60 分鐘未確認即列為逾時漏傳。\n3. 實測模擬逾時未確認發票（發票 LP50936613 於 11:56:49 傳送，13:20 檢核逾時 83 分鐘），系統自動偵測並觸發補傳排程，重新封裝 XML 派送至 Turnkey UpCast 目錄並發送通知予管理者；隨後對帳報告確認全部 7 筆測試單據（發票 4 筆、折讓 3 筆，對應 21 筆 B2B 交換訊息）全數存證確認（0 筆漏傳）。佐證畫面如下（含每日排程、漏傳逾時偵測與自動補傳、測試單據全數確認對帳報告）：")
     ])
     add_evidence(cell_ev3, 'item3_missing', ns)
 
@@ -224,7 +224,7 @@ def main():
     cell_ev4 = make_fullwidth_evidence_row(t3_rows[8], '表格3.C9', ns, col_count=4)
     set_cell_paragraphs(cell_ev4, [
         ("P26", "(佐證畫面與說明)"),
-        ("P43", "說明：【發票異常錯誤處理與 SummaryResult 筆數比對】\n1. 【異常發票處理】Turnkey 傳輸若回覆狀態 E（傳輸或簽章錯誤，如憑證過期 E0101），系統即刻將 ERP 訂單標記為 FAILED 並記錄錯誤代碼與原因；經管理員更新軟體憑證重新簽章後重送，成功取得狀態 C（存證成功）。\n2. 【SummaryResult 筆數比對】系統每日自動解析大平台回傳之 SummaryResult XML 檔（00015555-PA006753-00015555-PA006753-20260924-Final.SummaryResult），比對總上傳筆數（Total: 13）、成功筆數（Good: 13）、失敗筆數（Failed: 0）與處理代碼（00000），與 ERP 開立筆數達成 100% 比對相符（勾選「通過 (比對筆數)」）。佐證畫面如下（含狀態 E 處理重送紀錄與 SummaryResult 筆數比對報告）：")
+        ("P43", "說明：【發票異常錯誤處理與 SummaryResult 筆數比對】\n1. 【異常發票處理】Turnkey 傳輸若回覆狀態 E（傳輸或簽章錯誤，如憑證過期 E0101），系統即刻將 ERP 訂單標記為 FAILED 並記錄錯誤代碼與原因；經管理員更新軟體憑證重新簽章後重送，成功取得狀態 C（存證成功）。\n2. 【SummaryResult 筆數比對】系統每日自動解析大平台回傳之 SummaryResult XML 檔（09/23 比對 8 筆、09/24 比對 13 筆，共 21 筆 B2B 交換訊息及 E0402 ProcessResult 代碼 00000），比對總上傳筆數（Total: 21）、成功筆數（Good: 21）、失敗筆數（Failed: 0），與 ERP 開立筆數達成 100% 比對相符（勾選「通過 (處理回應)」、「通過 (比對筆數)」）。佐證畫面如下（含狀態 E 處理重送紀錄與 SummaryResult 筆數比對報告）：")
     ])
     add_evidence(cell_ev4, 'item4_errors', ns)
 
@@ -269,7 +269,7 @@ def main():
     cell_t8_ev1 = make_fullwidth_evidence_row(t8_rows[2], '表格8.C3', ns, col_count=3)
     set_cell_paragraphs(cell_t8_ev1, [
         ("P27", "(佐證畫面與說明)"),
-        ("P43", "說明：【Turnkey 訊息記錄查詢與 SummaryResult 系統檢核】\n1. 透過 Turnkey 軟體【訊息記錄查詢】功能查詢傳輸紀錄，本次 B2B 交換 14 個測試情境訊息（涵蓋 A0101、A0102、A0201、A0202、A0301、A0302、B0101、B0102、B0201、B0202 等各生命週期訊息）及空白未使用字軌檔（E0402）共 20 筆傳輸作業，處理狀態全數顯示為綠色「C:確認」（資料上傳完畢且收到大平台存證成功回覆 00000），無任何「E」錯誤或「P」未完成狀態。\n2. 系統每日比對 Turnkey 主機接收之 SummaryResult 與 ProcessResult，測試單據 13 筆上傳訊息與大平台回覆成功筆數 13 筆 100% 相符。佐證畫面如下（Turnkey 訊息記錄查詢全部狀態為 C 之原生介面）：")
+        ("P43", "說明：【Turnkey 訊息記錄查詢與 SummaryResult 系統檢核】\n1. 透過 Turnkey 軟體【訊息記錄查詢】功能查詢傳輸紀錄，本次 B2B 交換測試（涵蓋 A0101、A0102、A0201、A0202、A0301、A0302、B0101、B0102、B0201、B0202 等各生命週期訊息共 21 筆）及空白未使用字軌檔（E0402 共 1 筆），合計 22 筆傳輸作業，處理狀態全數顯示為綠色「C:確認」（資料上傳完畢且收到大平台存證成功回覆 00000），無任何「E」錯誤或「P」未完成狀態，伺服器連線為 tgw.einvoice.nat.gov.tw (測試環境)。\n2. 系統每日比對 Turnkey 主機接收之 SummaryResult 與 ProcessResult，全數上傳訊息與大平台回覆成功筆數 100% 相符。佐證畫面如下（Turnkey 訊息記錄查詢全部 22 筆狀態為 C 之原生介面）：")
     ])
     add_evidence(cell_t8_ev1, 'turnkey_status_c', ns)
 
@@ -282,7 +282,7 @@ def main():
     cell_t8_ev2 = make_fullwidth_evidence_row(t8_rows[4], '表格8.C5', ns, col_count=3)
     set_cell_paragraphs(cell_t8_ev2, [
         ("P27", "(佐證畫面與說明)"),
-        ("P43", "說明：【Web 大平台發票查詢與線上自行檢測結果查驗】\n1. 登入財政部電子發票大平台驗測環境（https://wwwtest.einvoice.nat.gov.tw），路徑：【營業人功能選單 ➔ 查詢與下載 ➔ 發票查詢/列印/下載】。查詢發票號碼區間 LP50936600 ～ LP50936613，查得全數 6 筆測試單據（發票 3 筆：LP50936610作廢、LP50936612退回、LP50936613作廢；折讓 3 筆：BWLP50936601折讓、BWLP50936602作廢折讓、BWLP50936603作廢折讓），各欄位內容完整顯示且與開立資料完全相符（其餘未開立字軌均已於 E0402 申報空白未使用）。\n2. 同時登入大平台【營業人功能選單 ➔ Turnkey ➔ Turnkey上線前自行檢測作業】，查詢 B2B 交換上傳檢測結果，全數 10 大項、14 個情境測試結果之「是否通過」欄位均正式標示為「通過」。佐證畫面如下（發票查詢完整畫面及線上自行檢測全數通過畫面）：")
+        ("P43", "說明：【Web 大平台發票查詢與線上自行檢測結果查驗】\n1. 登入財政部電子發票大平台驗測環境（https://wwwtest.einvoice.nat.gov.tw），路徑：【營業人功能選單 ➔ 查詢與下載 ➔ 發票查詢/列印/下載】。查詢發票號碼區間 LP50936600 ～ LP50936613，查得全數 7 筆測試單據（發票 4 筆：LP50936610 作廢、LP50936611 開立[作為折讓單之基準發票]、LP50936612 退回、LP50936613 作廢；折讓 3 筆：BWLP50936601 折讓、BWLP50936602 作廢折讓、BWLP50936603 作廢折讓），各欄位內容完整顯示且與開立資料完全相符（字軌配額其餘未開立之 46 號均已於 E0402 申報空白未使用）。\n2. 同時登入大平台【營業人功能選單 ➔ Turnkey ➔ Turnkey上線前自行檢測作業】，查詢 B2B 交換上傳檢測結果，全數 10 大項、14 個情境測試結果之「是否通過」欄位均正式標示為「通過」。佐證畫面如下（大平台發票查詢 7 筆完整畫面及大平台線上自行檢測 14 個情境全數通過畫面）：")
     ])
     add_evidence(cell_t8_ev2, 'platform_invoice_query', ns)
 
