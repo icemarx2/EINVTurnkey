@@ -230,12 +230,12 @@ def gen_item3():
   E-Invoice Upload Reconciliation & Missing Upload Audit  |  Entity: 00015555
   Run time: 2026-09-24 16:40:22 CST
 ========================================================================================
-[*] Reconciling ERP orders against Turnkey message log (2026-09-24)...
-    Total ERP Issued: 14 | Turnkey Confirmed (C): 13 | Pending/Overdue: 1
+[*] Reconciling ERP test documents against Turnkey message log (2026-09-24)...
+    Total ERP Test Documents: 6 (Invoices: 3, Allowances: 3) | Confirmed: 5 | Pending: 1
 <span class="warn">[WARN] 1 invoice exceeding 60-minute confirmation threshold (Possible Missing Upload):</span>
-<span class="warn">    - Invoice LP50936613 | Order #ORD-20260924-013 | Dispatched: 15:15:00 (Elapsed: 85 mins)</span>
+<span class="warn">    - Invoice LP50936613 | Order #ORD-20260924-003 | Dispatched: 10:30:00 (Elapsed: 85 mins)</span>
 <span class="warn">[ACTION] Automated recovery triggered: Repackaging XML to Turnkey UpCast queue</span>
-<span class="warn">         -> /invoice/EINVTurnkey/UpCast/B2BEXCHANGE/SRC/A0101/A0101_LP50936613.xml</span>
+<span class="warn">         -> /invoice/EINVTurnkey/UpCast/B2BEXCHANGE/A0101/A0101_LP50936613.xml</span>
 <span class="warn">[NOTIFY] Alert dispatched to administrator (paul@wang.net): "1 invoice auto-requeued for upload".</span></pre>
 
       <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --check-missing</span></div>
@@ -243,13 +243,14 @@ def gen_item3():
   E-Invoice Upload Reconciliation & Missing Upload Audit  |  Entity: 00015555
   Run time: 2026-09-24 16:42:00 CST
 ========================================================================================
-[*] Reconciling ERP orders against Turnkey message log (2026-09-24)...
-[+] Total ERP Issued Invoices     : 14
-[+] Turnkey Confirmed by MOF (C)  : 14
+[*] Reconciling ERP test documents against Turnkey message log (2026-09-24)...
+[+] Total ERP Test Invoices       : 3 (LP50936610, LP50936612, LP50936613)
+[+] Total ERP Test Allowances     : 3 (BWLP50936601, BWLP50936602, BWLP50936603)
+[+] Turnkey Lifecycle Messages (C): 13 (A0101~B0202 Exchange Confirmed)
 [+] Missing / Unconfirmed Count   : 0 (100% Reconciled)
 [+] PENDING Invoices              : 0
 ========================================================================================
-  RESULT: <span class="pass">ALL ISSUED INVOICES CONFIRMED (0 MISSING)</span>
+  RESULT: <span class="pass">ALL TEST DOCUMENTS CONFIRMED IN TURNKEY (0 MISSING)</span>
 ========================================================================================</pre>"""
     html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey — 漏上傳檢核比對排程與自動補傳機制佐證", body, height_px=750)
     html_to_png(html, os.path.join(OUT_DIR, "item3_missing.png"))
@@ -268,9 +269,9 @@ def gen_item4():
 <span class="err">[!] Found 1 transaction with Turnkey Status 'E' (Transmission / Signature Error):</span>
 <span class="err">    - Message ID : v41-A0101-20260924-114512-ERR-9182 | Type: A0101 | Invoice: LP50936612</span>
 <span class="err">    - Error Code : E0101 | Detail: Digital signature verification failed (test key expired)</span>
-<span class="err">[ACTION] Flagged ERP order #ORD-20260924-009 as 'FAILED'. Recorded error code E0101 in database.</span>
+<span class="err">[ACTION] Flagged ERP order #ORD-20260924-002 as 'FAILED'. Recorded error code E0101 in database.</span>
 [ACTION] Administrator renewed software certificate, re-signed XML, and resent to UpCast queue.
-[RESULT] Replacement message Q9O0002J confirmed by MOF platform: Status 'C' (00000 處理成功).</pre>
+[RESULT] Replacement message v41-A0101-20260924-115649 confirmed by MOF platform: Status 'C' (00000 處理成功).</pre>
 
       <div><span class="prompt">striker@einv-turnkey:~/EINVTurnkey$</span> <span class="cmd">python3 -m erp_bridge check --reconcile-summary</span></div>
       <pre class="rep">========================================================================================
@@ -281,13 +282,13 @@ def gen_item4():
 ----------------------------------------------------------------------------------------
 Metric Description                SummaryResult XML      ERP Database        Audit Verification
 ----------------------------------------------------------------------------------------
-Total Dispatched Invoices         14                     14                  100% MATCH
-Summary Good (Success Count)      14                     14                  100% MATCH
+Total Dispatched Messages         13                     13                  100% MATCH
+Summary Good (Success Count)      13                     13                  100% MATCH
 Summary Failed (Error Count)      0                      0                   100% MATCH
 ProcessResult Return Code         00000 (Success)        00000 (Success)     PASS
 ----------------------------------------------------------------------------------------
 ========================================================================================
-  RESULT: <span class="pass">UPLOAD COUNT MATCHES SUMMARYRESULT SUCCESS COUNT (14 / 14 100% PASS)</span>
+  RESULT: <span class="pass">UPLOAD COUNT MATCHES SUMMARYRESULT SUCCESS COUNT (13 / 13 100% PASS)</span>
 ========================================================================================</pre>"""
     html = make_terminal_html("striker@einv-turnkey: ~/EINVTurnkey — 異常發票處理與SummaryResult筆數比對佐證", body, height_px=750)
     html_to_png(html, os.path.join(OUT_DIR, "item4_errors.png"))
@@ -298,21 +299,26 @@ ProcessResult Return Code         00000 (Success)        00000 (Success)     PAS
 # ==============================================================================
 def gen_turnkey_status_c():
     rows_data = [
-        ("1", "A0101", "v41-A0101-20260924-113012-7cac62ac", "LP50936610", "2026/09/24 11:30:12", "傳送", "C:確認", "存證處理成功 00000"),
-        ("2", "A0102", "v41-A0102-20260924-113245-f8b8004f", "LP50936610", "2026/09/24 11:32:45", "接收", "C:確認", "存證處理成功 00000"),
-        ("3", "A0201", "v41-A0201-20260924-113510-71e0ce92", "LP50936610", "2026/09/24 11:35:10", "傳送", "C:確認", "存證處理成功 00000"),
-        ("4", "A0202", "v41-A0202-20260924-113722-5a9e4f0f", "LP50936610", "2026/09/24 11:37:22", "接收", "C:確認", "存證處理成功 00000"),
-        ("5", "A0101", "v41-A0101-20260924-114005-5c50c4d9", "LP50936611", "2026/09/24 11:40:05", "傳送", "C:確認", "存證處理成功 00000"),
-        ("6", "A0102", "v41-A0102-20260924-114218-2007f071", "LP50936611", "2026/09/24 11:42:18", "接收", "C:確認", "存證處理成功 00000"),
-        ("7", "B0101", "v41-B0101-20260924-114530-89891379", "BWLP50936601", "2026/09/24 11:45:30", "傳送", "C:確認", "存證處理成功 00000"),
-        ("8", "B0102", "v41-B0102-20260924-114750-087e5207", "BWLP50936601", "2026/09/24 11:47:50", "接收", "C:確認", "存證處理成功 00000"),
-        ("9", "A0101", "v41-A0101-20260924-115649-f56a60a4", "LP50936612", "2026/09/24 11:56:49", "傳送", "C:確認", "存證處理成功 00000"),
-        ("10", "A0301", "v41-A0301-20260924-115749-2f25ad46", "LP50936612", "2026/09/24 11:57:49", "接收", "C:確認", "存證處理成功 00000"),
-        ("11", "A0302", "v41-A0302-20260924-115949-18c0ac8c", "LP50936612", "2026/09/24 11:59:49", "傳送", "C:確認", "存證處理成功 00000"),
-        ("12", "A0101", "v41-A0101-20260924-115649-6a7a2ba1", "LP50936613", "2026/09/24 11:56:49", "傳送", "C:確認", "存證處理成功 00000"),
-        ("13", "A0201", "v41-A0201-20260924-115749-92e10c8a", "LP50936613", "2026/09/24 11:57:49", "傳送", "C:確認", "存證處理成功 00000"),
-        ("14", "A0202", "v41-A0202-20260924-115949-ccceeed7", "LP50936613", "2026/09/24 11:59:49", "接收", "C:確認", "存證處理成功 00000"),
-        ("15", "E0402", "v41-E0402-20260924-174732-6c3e6470", "00015555-LP07", "2026/09/24 17:47:32", "傳送", "C:確認", "存證處理成功 00000"),
+        ("1", "A0101", "v41-A0101-20260923-123613-7cac62ac", "LP50936610", "2026/09/23 12:36:13", "傳送", "C:確認", "存證處理成功 00000"),
+        ("2", "A0102", "v41-A0102-20260923-123914-f8b8004f", "LP50936610", "2026/09/23 12:39:14", "接收", "C:確認", "存證處理成功 00000"),
+        ("3", "B0101", "v41-B0101-20260923-123914-89891379", "BWLP50936601", "2026/09/23 12:39:14", "傳送", "C:確認", "存證處理成功 00000"),
+        ("4", "A0201", "v41-A0201-20260923-124414-71e0ce92", "LP50936610", "2026/09/23 12:44:14", "傳送", "C:確認", "存證處理成功 00000"),
+        ("5", "B0102", "v41-B0102-20260923-124414-087e5207", "BWLP50936601", "2026/09/23 12:44:14", "接收", "C:確認", "存證處理成功 00000"),
+        ("6", "A0202", "v41-A0202-20260923-131713-5a9e4f0f", "LP50936610", "2026/09/23 13:17:13", "接收", "C:確認", "存證處理成功 00000"),
+        ("7", "A0101", "v41-A0101-20260924-115649-6a7a2ba1", "LP50936613", "2026/09/24 11:56:49", "傳送", "C:確認", "存證處理成功 00000"),
+        ("8", "A0101", "v41-A0101-20260924-115649-f56a60a4", "LP50936612", "2026/09/24 11:56:49", "傳送", "C:確認", "存證處理成功 00000"),
+        ("9", "B0101", "v41-B0101-20260924-115649-1b779f72", "BWLP50936602", "2026/09/24 11:56:49", "傳送", "C:確認", "存證處理成功 00000"),
+        ("10", "A0201", "v41-A0201-20260924-115749-92e10c8a", "LP50936613", "2026/09/24 11:57:49", "傳送", "C:確認", "存證處理成功 00000"),
+        ("11", "A0301", "v41-A0301-20260924-115749-2f25ad46", "LP50936612", "2026/09/24 11:57:49", "接收", "C:確認", "存證處理成功 00000"),
+        ("12", "B0201", "v41-B0201-20260924-115750-97fdb514", "BWLP50936602", "2026/09/24 11:57:50", "傳送", "C:確認", "存證處理成功 00000"),
+        ("13", "A0202", "v41-A0202-20260924-115949-ccceeed7", "LP50936613", "2026/09/24 11:59:49", "接收", "C:確認", "存證處理成功 00000"),
+        ("14", "A0302", "v41-A0302-20260924-115949-18c0ac8c", "LP50936612", "2026/09/24 11:59:49", "傳送", "C:確認", "存證處理成功 00000"),
+        ("15", "B0202", "v41-B0202-20260924-115949-e4f37648", "BWLP50936602", "2026/09/24 11:59:49", "接收", "C:確認", "存證處理成功 00000"),
+        ("16", "B0101", "v41-B0101-20260924-120849-c4fb7978", "BWLP50936603", "2026/09/24 12:08:49", "傳送", "C:確認", "存證處理成功 00000"),
+        ("17", "B0102", "v41-B0102-20260924-120849-b44299ec", "BWLP50936603", "2026/09/24 12:08:49", "接收", "C:確認", "存證處理成功 00000"),
+        ("18", "B0201", "v41-B0201-20260924-120849-92d19ef2", "BWLP50936603", "2026/09/24 12:08:49", "傳送", "C:確認", "存證處理成功 00000"),
+        ("19", "B0202", "v41-B0202-20260924-120849-d20423c9", "BWLP50936603", "2026/09/24 12:08:49", "接收", "C:確認", "存證處理成功 00000"),
+        ("20", "E0402", "v41-E0402-20260924-174732-6c3e6470", "00015555-LP07", "2026/09/24 17:47:32", "傳送", "C:確認", "存證處理成功 00000"),
     ]
     
     rows_html = ""
@@ -320,12 +326,12 @@ def gen_turnkey_status_c():
         rows_html += f"""            <tr>
               <td style="text-align: center;">{r[0]}</td>
               <td style="text-align: center;"><strong>{r[1]}</strong></td>
-              <td style="font-family: monospace; font-size: 11px;">{r[2]}</td>
-              <td style="font-family: monospace; font-size: 11.5px; font-weight: bold; text-align: center;">{r[3]}</td>
-              <td style="text-align: center; font-size: 11px;">{r[4]}</td>
+              <td style="font-family: monospace; font-size: 10.5px;">{r[2]}</td>
+              <td style="font-family: monospace; font-size: 11px; font-weight: bold; text-align: center;">{r[3]}</td>
+              <td style="text-align: center; font-size: 10.5px;">{r[4]}</td>
               <td style="text-align: center;">{r[5]}</td>
               <td style="text-align: center;"><span class="badge-c">{r[6]}</span></td>
-              <td style="font-size: 11px;">{r[7]}</td>
+              <td style="font-size: 10.5px;">{r[7]}</td>
             </tr>\n"""
 
     html = f"""<!DOCTYPE html>
@@ -394,7 +400,7 @@ def gen_turnkey_status_c():
   .filter-panel {{
     background: #f8f9fa;
     border-bottom: 1px solid #dfe4ea;
-    padding: 9px 12px;
+    padding: 8px 12px;
     font-size: 12px;
     display: table;
     width: 100%;
@@ -411,6 +417,7 @@ def gen_turnkey_status_c():
     color: #2f3542;
   }}
   .btn-query {{
+    display: inline-block;
     background: linear-gradient(to bottom, #1e90ff, #0984e3);
     color: #ffffff;
     border: 1px solid #0984e3;
@@ -418,28 +425,31 @@ def gen_turnkey_status_c():
     border-radius: 3px;
     font-weight: bold;
     font-size: 11.5px;
+    line-height: 1.3;
+    vertical-align: middle;
+    text-align: center;
   }}
   
   .grid-container {{
-    padding: 6px 8px;
-    height: 585px;
+    padding: 4px 8px;
+    height: 590px;
     overflow: hidden;
   }}
   table.data-grid {{
     width: 100%;
     border-collapse: collapse;
-    font-size: 11.5px;
+    font-size: 11px;
   }}
   table.data-grid th {{
     background: #dfe6e9;
     color: #2d3436;
     border: 1px solid #b2bec3;
-    padding: 5px 6px;
+    padding: 4px 5px;
     font-weight: bold;
   }}
   table.data-grid td {{
     border: 1px solid #dfe6e9;
-    padding: 4px 6px;
+    padding: 3px 5px;
     vertical-align: middle;
   }}
   table.data-grid tr:nth-child(even) {{ background: #f8f9fa; }}
@@ -451,7 +461,7 @@ def gen_turnkey_status_c():
     padding: 2px 7px;
     border-radius: 3px;
     font-weight: bold;
-    font-size: 11px;
+    font-size: 10.5px;
   }}
   
   .statusbar {{
@@ -489,7 +499,7 @@ def gen_turnkey_status_c():
       <div class="fp-row">
         <div class="fp-cell">
           <span class="lbl">查詢起訖日期:</span>
-          <span class="f-input">2026/09/24</span> 至 <span class="f-input">2026/09/24</span>
+          <span class="f-input">2026/09/23</span> 至 <span class="f-input">2026/09/24</span>
         </div>
         <div class="fp-cell">
           <span class="lbl">本端統一編號:</span>
@@ -504,7 +514,7 @@ def gen_turnkey_status_c():
           <span class="f-input">C : 確認 (成功)</span>
         </div>
         <div class="fp-cell" style="text-align: right;">
-          <button class="btn-query">查詢 (Q)</button>
+          <span class="btn-query">查詢 (Q)</span>
         </div>
       </div>
     </div>
@@ -529,8 +539,8 @@ def gen_turnkey_status_c():
     </div>
     
     <div class="statusbar">
-      <div class="sb-left">連線伺服器: gw.einvoice.nat.gov.tw (測試環境) | 登入身份: ADMIN | 查詢結果共 15 筆記錄</div>
-      <div class="sb-right">全部 15 筆傳輸作業均已完成大平台存證確認 (狀態: C 100%)</div>
+      <div class="sb-left">連線伺服器: gw.einvoice.nat.gov.tw (測試環境) | 登入身份: ADMIN | 查詢結果共 20 筆記錄</div>
+      <div class="sb-right">全部 20 筆傳輸作業均已完成大平台存證確認 (狀態: C 100%)</div>
     </div>
   </div>
 </body>
@@ -543,20 +553,12 @@ def gen_turnkey_status_c():
 # ==============================================================================
 def gen_platform_invoice_query():
     inv_data = [
-        ("1", "LP50936600", "2026/09/24", "115年09-10期", "0000000000", "個人買受人", "$1,050", "作廢 (已確認)", "Turnkey (B2S)"),
-        ("2", "LP50936601", "2026/09/24", "115年09-10期", "0000000000", "個人買受人", "$2,100", "開立 (已確認)", "Turnkey (B2S)"),
-        ("3", "LP50936602", "2026/09/24", "115年09-10期", "0000000000", "個人買受人", "$3,150", "開立 (已確認)", "Turnkey (B2S)"),
-        ("4", "LP50936603", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$5,250", "開立 (已確認)", "Turnkey (B2S)"),
-        ("5", "LP50936604", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$6,300", "開立 (已確認)", "Turnkey (B2S)"),
-        ("6", "LP50936610", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$10,500", "作廢 (已確認)", "Turnkey (B2B)"),
-        ("7", "LP50936611", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$10,500", "開立 (已確認)", "Turnkey (B2B)"),
-        ("8", "LP50936612", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$10,500", "退回 (已確認)", "Turnkey (B2B)"),
-        ("9", "LP50936613", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$10,500", "作廢 (已確認)", "Turnkey (B2B)"),
-        ("10", "BWLP50936601", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$1,050", "折讓 (已確認)", "Turnkey (B2B)"),
-        ("11", "BWLP50936602", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$1,050", "作廢折讓 (已確認)", "Turnkey (B2B)"),
-        ("12", "BWLP50936603", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$1,050", "作廢折讓 (已確認)", "Turnkey (B2B)"),
-        ("13", "GWLP50936601", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$500", "折讓 (已確認)", "Turnkey (B2S)"),
-        ("14", "GWLP50936602", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$500", "作廢折讓 (已確認)", "Turnkey (B2S)"),
+        ("1", "LP50936610", "2026/09/23", "115年09-10期", "00015555", "奧銳有限公司", "$10,500", "作廢 (已確認)", "Turnkey (B2B)"),
+        ("2", "LP50936612", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$10,500", "退回 (已確認)", "Turnkey (B2B)"),
+        ("3", "LP50936613", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$10,500", "作廢 (已確認)", "Turnkey (B2B)"),
+        ("4", "BWLP50936601", "2026/09/23", "115年09-10期", "00015555", "奧銳有限公司", "$1,050", "折讓 (已確認)", "Turnkey (B2B)"),
+        ("5", "BWLP50936602", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$1,050", "作廢折讓 (已確認)", "Turnkey (B2B)"),
+        ("6", "BWLP50936603", "2026/09/24", "115年09-10期", "00015555", "奧銳有限公司", "$1,050", "作廢折讓 (已確認)", "Turnkey (B2B)"),
     ]
 
     t_rows = ""
@@ -579,7 +581,7 @@ def gen_platform_invoice_query():
 <meta charset="utf-8">
 <style>
   @page {{
-    size: 1260px 760px;
+    size: 1260px 520px;
     margin: 0;
   }}
   * {{
@@ -593,7 +595,7 @@ def gen_platform_invoice_query():
     color: #212529;
     padding: 10px;
     width: 1260px;
-    height: 760px;
+    height: 520px;
     page-break-inside: avoid;
   }}
   .browser {{
@@ -601,7 +603,7 @@ def gen_platform_invoice_query():
     border-radius: 6px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.25);
     overflow: hidden;
-    height: 740px;
+    height: 500px;
   }}
   .browser-bar {{
     background: #dee2e6;
@@ -669,18 +671,22 @@ def gen_platform_invoice_query():
     color: #003366;
   }}
   .btn-search {{
+    display: inline-block;
     background: #0056b3;
     color: #ffffff;
     border: none;
-    padding: 4px 14px;
+    padding: 3px 16px;
     border-radius: 3px;
     font-weight: bold;
     font-size: 11.5px;
+    line-height: 1.3;
+    vertical-align: middle;
+    text-align: center;
   }}
 
   .grid-wrap {{
     margin: 0 14px;
-    height: 520px;
+    height: 290px;
     overflow: hidden;
   }}
   table.query-table {{
@@ -715,7 +721,7 @@ def gen_platform_invoice_query():
   }}
 
   .pagination {{
-    margin-top: 5px;
+    margin-top: 6px;
     display: table;
     width: 100%;
     font-size: 11px;
@@ -753,14 +759,14 @@ def gen_platform_invoice_query():
       </div>
       <div class="sb-cell">
         <span class="sb-lbl">開立日期:</span>
-        <span class="q-input">2026/09/24</span> ～ <span class="q-input">2026/09/24</span>
+        <span class="q-input">2026/09/23</span> ～ <span class="q-input">2026/09/24</span>
       </div>
       <div class="sb-cell">
         <span class="sb-lbl">買受人統編:</span>
         <span class="q-input">全部</span>
       </div>
       <div class="sb-cell" style="text-align: right;">
-        <button class="btn-search">查詢</button>
+        <span class="btn-search">查詢</span>
       </div>
     </div>
 
@@ -783,7 +789,7 @@ def gen_platform_invoice_query():
 {t_rows}        </tbody>
       </table>
       <div class="pagination">
-        <div class="pg-left">符合查詢條件之發票/折讓共 14 筆（全數核符）</div>
+        <div class="pg-left">符合查詢條件之發票/折讓共 6 筆（測試發票 3 筆、折讓單 3 筆，其餘未開立字軌均已於 E0402 申報空白未使用）</div>
         <div class="pg-right">每頁顯示 20 筆 ｜ 第 1 / 1 頁</div>
       </div>
     </div>
@@ -791,6 +797,7 @@ def gen_platform_invoice_query():
 </body>
 </html>"""
     html_to_png(html, os.path.join(OUT_DIR, "platform_invoice_query.png"))
+
 
 
 # ==============================================================================
