@@ -272,11 +272,33 @@ def parse_summary(path):
     as well as flat summary schemas."""
     if path.endswith("-Final.SummaryResult"):
         return None
+    root = None
     try:
-        tree = ET.parse(path)
-    except ET.ParseError:
+        root = ET.parse(path).getroot()
+    except Exception:
+        pass
+    if root is None:
+        try:
+            with open(path, "rb") as f:
+                data = f.read()
+            import base64
+            # If base64-encoded PKCS#7 envelope
+            if data.startswith(b"MIA") or b"PD94bWwg" in data:
+                try:
+                    data = base64.b64decode(data)
+                except Exception:
+                    pass
+            idx = data.find(b"<?xml")
+            if idx == -1:
+                idx = data.find(b"<SummaryResult")
+            end = data.find(b"</SummaryResult>")
+            if idx != -1 and end != -1:
+                xml_chunk = data[idx:end + len(b"</SummaryResult>")]
+                root = ET.fromstring(xml_chunk)
+        except Exception:
+            return None
+    if root is None:
         return None
-    root = tree.getroot()
     messages = root.findall(".//{*}Message")
     if messages:
         total, good, bad = 0, 0, 0
@@ -317,9 +339,9 @@ def parse_summary(path):
 def check_summary(conn, directory, day):
     d0 = dt.datetime.strptime(day, "%Y-%m-%d")
     d1 = d0 + dt.timedelta(days=1)
-    files = sorted(glob.glob(os.path.join(directory, f"*{d0:%Y%m%d}*SummaryResult*")))
+    files = sorted(glob.glob(os.path.join(directory, "**", f"*-{d0:%Y%m%d}-*SummaryResult*"), recursive=True))
     if not files:
-        files = sorted(glob.glob(os.path.join(directory, "**", f"*{d0:%Y%m%d}*SummaryResult*"), recursive=True))
+        files = sorted(glob.glob(os.path.join(directory, f"*-{d0:%Y%m%d}-*SummaryResult*")))
     files = [f for f in files if not f.endswith("-Final.SummaryResult")]
     if not files:
         print(f"no SummaryResult file for {day} in {directory}")

@@ -495,7 +495,7 @@ li {
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
                     說明：【字軌檢核與防呆告警機制】<br>
-                    1. 本公司系統設定每日固定排程（crontab: <code>0 23 * * * /usr/bin/python3 /opt/erp/erp_bridge_checks.py all --dir /path/to/SummaryResult >> /var/log/einv/daily_audit.log 2>&1</code>），自動執行字軌配號簿登錄檢核、號碼格式（2碼英文+8碼數字）及當期有效字軌區間稽核。<br>
+                    1. 本公司系統設定每日固定排程（crontab: <code>0 23 * * * /usr/bin/python3 /invoice/EINVTurnkey/scripts/erp_bridge_checks.py all --dir /invoice/EINVTurnkey/ReceiveFile/B2BEXCHANGE/BAK/SummaryResult >> /invoice/EINVTurnkey/alert.log 2>&1</code>），自動執行字軌配號簿登錄檢核、號碼格式（2碼英文+8碼數字）及當期有效字軌區間稽核。<br>
                     2. 資料庫建立字軌配號簿（einv_track_quota: 11510期 LP 50936600~50936649），執行正向檢核（<code>erp_bridge_checks.py track</code>）確認現存發票全數合規（RESULT: no anomaly）；執行負向測試（<code>erp_bridge_checks.py track --check-number AB12345678 --check-number LP99999999</code>），實體驗證器於不寫入資料下精準辨識非當期及超額字軌，即刻阻擋取號（REJECTED）。<br>
                     3. 檢核偵測異常時即時寫入告警日誌（alert.log），並支援管理者信箱通知（paul@wang.net），檢核以非零代碼結束。佐證畫面如下（含每日排程、字軌配號簿登記、正向與負向字軌防呆檢核及告警日誌）：
                 </div>
@@ -544,7 +544,7 @@ li {
                 <div class="desc-box">
                     <strong>【佐證畫面與說明】</strong><br>
                     說明：【漏上傳比對排程與手動補傳機制】<br>
-                    1. 本公司為單一機構自行上傳（非加值中心），設定每日固定排程（crontab: <code>0 23 * * * /usr/bin/python3 /opt/erp/erp_bridge_checks.py all ...</code>）逐日自動對帳。<br>
+                    1. 本公司為單一機構自行上傳（非加值中心），設定每日固定排程（crontab: <code>0 23 * * * /usr/bin/python3 /invoice/EINVTurnkey/scripts/erp_bridge_checks.py all ...</code>）逐日自動對帳。<br>
                     2. 系統逐筆比對 ERP「已開立發票單據」與 Turnkey 訊息紀錄之「大平台存證成功筆數（狀態 C）」，門檻設定為傳送超過 60 分鐘未確認即列為逾時漏傳。<br>
                     3. 實測負向案例：留置未上傳發票（PENDING 狀態），執行 <code>erp_bridge_checks.py missing</code> 成功偵測並產出告警（RESULT: 1 ANOMALY - never handed to Turnkey，寫入 alert.log）；經管理者手動執行補傳派送至 Turnkey UpCast 佇列並取得確認後，再次執行 missing 檢核確認 0 筆漏傳（RESULT: no anomaly），達成全數測試單據存證確認。佐證畫面如下（含每日排程、漏傳偵測告警、手動補傳派送及對帳零漏傳結果）：
                 </div>
@@ -570,7 +570,7 @@ li {
                     <strong>【佐證畫面與說明】</strong><br>
                     說明：【發票異常錯誤處理與 SummaryResult 筆數比對】<br>
                     1. 【異常發票處理 4(1)】Turnkey 傳輸若回覆狀態 E（傳輸或格式錯誤 E0102），ERP 訂單即刻標記為 FAILED 並記錄錯誤代碼與原因；執行 <code>erp_bridge_checks.py errors</code> 成功列出異常（RESULT: 1 ANOMALY，提示修正重開）；經修正買受人統編重新簽章派送後取得 Turnkey 狀態 C，再次執行 errors 檢核確認 0 筆異常（RESULT: no anomaly）。<br>
-                    2. 【SummaryResult 筆數比對 4(2)】系統每日自動解析大平台回傳之 SummaryResult XML 檔（09/23 8 筆、09/24 13 筆，共 21 筆 B2B 交換訊息及 E0402 空白未使用字軌 ProcessResult），執行 <code>erp_bridge_checks.py summary</code> 比對，SummaryResult 總筆數 13 筆、成功 13 筆，與 ERP 訊息日誌發送筆數 13 筆達成 100% 比對相符（勾選「通過 (處理回應)」、「通過 (比對筆數)」）。佐證畫面如下（含狀態 E 異常與修正重開檢核、SummaryResult XML 內容與筆數比對零異常）：
+                    2. 【SummaryResult 筆數比對 4(2)】系統每日自動解析大平台回傳之 SummaryResult XML 檔（09/23 6 筆、09/24 13 筆，共 19 筆 B2B 交換訊息及 1 筆 E0402 空白未使用字軌 ProcessResult，合計 20 筆），執行 <code>erp_bridge_checks.py summary</code> 比對，SummaryResult 總筆數 13 筆、成功 13 筆，與 ERP 訊息日誌發送筆數 13 筆達成 100% 比對相符（勾選「通過 (處理回應)」、「通過 (比對筆數)」）。佐證畫面如下（含狀態 E 異常與修正重開檢核、SummaryResult XML 內容與筆數比對零異常）：
                 </div>
                 <img class="proof-img" src="/invoice/EINVTurnkey/docs/evidence/item4_errors.png" alt="異常發票處理與檢核報告">
             </td>
@@ -767,8 +767,8 @@ li {
                 <div class="desc-box">
                     <strong>【佐證畫面與說明：Turnkey 處理結果確認】</strong><br>
                     說明：【Turnkey 訊息記錄查詢與 SummaryResult 系統檢核】<br>
-                    1. 透過 Turnkey 軟體【訊息記錄查詢】功能查詢傳輸紀錄，本次 B2B 交換測試（涵蓋 A0101、A0102、A0201、A0202、A0301、A0302、B0101、B0102、B0201、B0202 等各生命週期訊息共 21 筆）及空白未使用字軌檔（E0402 共 1 筆），合計 22 筆傳輸作業，處理狀態全數顯示為綠色「C:確認」（資料上傳完畢且收到大平台存證成功回覆 00000），無任何「E」錯誤或「P」未完成狀態，伺服器連線為 tgw.einvoice.nat.gov.tw (測試環境)。<br>
-                    2. 系統每日比對 Turnkey 主機接收之 SummaryResult 與 ProcessResult，全數上傳訊息與大平台回覆成功筆數 100% 相符。佐證畫面如下（Turnkey 訊息記錄查詢全部 22 筆狀態為 C 之原生介面）：
+                    1. 透過 Turnkey 軟體【訊息記錄查詢】功能查詢傳輸紀錄，狀態篩選「C:確認」，日期區間涵蓋測試期間 115/09/23～115/09/24。查詢結果共 32 筆傳輸作業（涵蓋 09/23 與 09/24 之 B2B 交換訊息 19 筆、B2C 測試訊息及 E0402 空白未使用字軌 1 筆），處理狀態全數顯示為「C:確認」（資料上傳完畢且收到大平台存證成功回覆 00000），I/O 均為「O:傳送」，無任何「E」錯誤狀態；視窗標題列明確標示原生介面「E-Invoice Turnkey (version = 3.2.1，測試環境)」。<br>
+                    2. 依檢核規範提供原生視窗佐證畫面。系統每日比對 Turnkey 主機接收之 SummaryResult 與 ProcessResult，全數上傳訊息與大平台回覆成功筆數 100% 相符。佐證畫面如下：
                 </div>
                 <img class="proof-img" src="/invoice/EINVTurnkey/docs/evidence/turnkey_status_c.png" alt="Turnkey訊息記錄查詢狀態為C佐證畫面">
             </td>
@@ -790,8 +790,8 @@ li {
                 <div class="desc-box">
                     <strong>【佐證畫面與說明：Web 大平台線上查詢驗證佐證】</strong><br>
                     說明：【Web 大平台發票查詢與線上自行檢測結果查驗】<br>
-                    1. 登入財政部電子發票大平台驗測環境（https://wwwtest.einvoice.nat.gov.tw），路徑：【營業人功能選單 ➔ 查詢與下載 ➔ 發票查詢/列印/下載】。查詢發票號碼區間 LP50936600 ～ LP50936613，查得全數 7 筆測試單據（發票 4 筆：LP50936610 作廢、LP50936611 開立[作為折讓單之基準發票]、LP50936612 退回、LP50936613 作廢；折讓 3 筆：BWLP50936601 折讓、BWLP50936602 作廢折讓、BWLP50936603 作廢折讓），各欄位內容完整顯示且與開立資料完全相符（字軌配額其餘未開立之 46 號均已於 E0402 申報空白未使用）。<br>
-                    2. 同時登入大平台【營業人功能選單 ➔ Turnkey ➔ Turnkey上線前自行檢測作業】，查詢 B2B 交換上傳檢測結果，全數 10 大項、14 個情境測試結果之「是否通過」欄位均正式標示為「通過」。佐證畫面如下（大平台發票查詢 7 筆完整畫面及大平台線上自行檢測 14 個情境全數通過畫面）：
+                    1. 登入財政部電子發票大平台驗測環境（https://wwwtest.einvoice.nat.gov.tw），路徑：【營業人功能選單 ➔ 查詢與下載 ➔ 發票查詢/列印/下載】。期別選擇 115 年 09-10 月（2026 年 9 月），查得測試期間全數 15 筆開立與異動單據（涵蓋 LP50936600～LP50936606 及 B2B 測試號碼 LP50936610、LP50936611、LP50936612、LP50936613 之開立、作廢與退回確認紀錄），畫面完整呈現上方官方網址列（wwwtest.einvoice.nat.gov.tw/...），各欄位內容完整顯示且與開立資料完全相符（字軌配額其餘未開立之號碼均已申報於 E0402 空白未使用字軌檔）。<br>
+                    2. 同時登入大平台【營業人功能選單 ➔ Turnkey ➔ Turnkey上線前自行檢測作業】，查詢 B2B 交換上傳檢測結果，全數 10 大項、14 個情境測試結果之「是否通過」欄位均正式標示為「通過」。佐證畫面如下（大平台發票查詢完整畫面及大平台線上自行檢測 14 個情境全數通過畫面）：
                 </div>
                 <img class="proof-img-half" src="/invoice/EINVTurnkey/docs/evidence/platform_invoice_query.png" alt="Web大平台發票查詢結果佐證畫面">
                 <img class="proof-img-half" src="/invoice/EINVTurnkey/Pictures/proof_b2b.png" alt="Web大平台B2B交換情境測試全數通過佐證">
